@@ -63,7 +63,7 @@ export async function loadMinigraf() {
     const fixedUrl = URL.createObjectURL(fixedBlob)
     
     // Now load as module
-    const ns = await import(fixedUrl) as {
+    const ns = await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ fixedUrl) as {
       default: () => Promise<void>
       BrowserDb: {
         open: (name: string) => Promise<{
