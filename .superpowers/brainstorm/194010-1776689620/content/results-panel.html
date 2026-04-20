@@ -1,0 +1,75 @@
+<h2>Results Panel — what should it show?</h2>
+<p class="subtitle">When a Datalog query runs, how should results be displayed?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Table only</h3>
+      <p>Query results shown as a simple table of tuples. Fast to build, clean, familiar to developers.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Results</div>
+        <div class="mockup-body" style="font-family:monospace;font-size:12px">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="border-bottom:1px solid #444"><th style="text-align:left;padding:4px 8px">?person</th><th style="text-align:left;padding:4px 8px">?friend</th></tr></thead>
+            <tbody>
+              <tr><td style="padding:4px 8px">alice</td><td style="padding:4px 8px">bob</td></tr>
+              <tr><td style="padding:4px 8px">alice</td><td style="padding:4px 8px">carol</td></tr>
+              <tr><td style="padding:4px 8px">bob</td><td style="padding:4px 8px">dave</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Graph viz only</h3>
+      <p>Results rendered as a force-directed node/edge graph (React Flow or Cytoscape.js). Great for showing relationships visually, but harder to read for large result sets.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header">Results</div>
+        <div class="mockup-body" style="height:120px;display:flex;align-items:center;justify-content:center">
+          <svg width="240" height="100" viewBox="0 0 240 100">
+            <line x1="60" y1="50" x2="120" y2="25" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+            <line x1="60" y1="50" x2="120" y2="75" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+            <line x1="120" y1="25" x2="180" y2="50" stroke="#666" stroke-width="1.5" marker-end="url(#arr)"/>
+            <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#666"/></marker></defs>
+            <circle cx="60" cy="50" r="18" fill="#3b82f6" opacity="0.8"/>
+            <circle cx="120" cy="25" r="18" fill="#8b5cf6" opacity="0.8"/>
+            <circle cx="120" cy="75" r="18" fill="#8b5cf6" opacity="0.8"/>
+            <circle cx="180" cy="50" r="18" fill="#10b981" opacity="0.8"/>
+            <text x="60" y="54" text-anchor="middle" fill="white" font-size="9">alice</text>
+            <text x="120" y="29" text-anchor="middle" fill="white" font-size="9">bob</text>
+            <text x="120" y="79" text-anchor="middle" fill="white" font-size="9">carol</text>
+            <text x="180" y="54" text-anchor="middle" fill="white" font-size="9">dave</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Table + graph toggle</h3>
+      <p>Tabular results by default, with a "Show Graph" toggle. Best of both worlds — accessible for beginners, visually rewarding for graph queries.</p>
+      <div class="mockup" style="margin-top:12px">
+        <div class="mockup-header" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Results</span>
+          <span style="font-size:11px;background:#3b82f6;padding:2px 8px;border-radius:4px;cursor:pointer">⬡ Graph</span>
+        </div>
+        <div class="mockup-body" style="font-family:monospace;font-size:12px">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="border-bottom:1px solid #444"><th style="text-align:left;padding:4px 8px">?person</th><th style="text-align:left;padding:4px 8px">?friend</th></tr></thead>
+            <tbody>
+              <tr><td style="padding:4px 8px">alice</td><td style="padding:4px 8px">bob</td></tr>
+              <tr><td style="padding:4px 8px">alice</td><td style="padding:4px 8px">carol</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
