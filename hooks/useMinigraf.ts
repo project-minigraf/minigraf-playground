@@ -6,15 +6,28 @@ type Status = 'loading' | 'ready' | 'error'
 
 let instancePromise: Promise<unknown> | null = null
 
+// Load WASM using fetch + WebAssembly for better Turbopack compatibility
+async function loadWasm() {
+  if (typeof window === 'undefined') {
+    throw new Error('WASM can only be loaded in browser')
+  }
+  
+  // Fetch the JS file as text then eval it
+  const response = await fetch('/wasm/pkg/minigraf.js')
+  const jsCode = await response.text()
+  
+  // Create a module from the code
+  // eslint-disable-next-line no-new-func
+  const moduleFn = new Function('exports', jsCode + '\nreturn exports')
+  const exports: { default: () => Promise<void>; BrowserDb: { open: (name: string) => Promise<unknown> } } = moduleFn({})
+  
+  await exports.default()
+  return exports.BrowserDb.open('minigraf')
+}
+
 function getOrCreateInstance() {
   if (!instancePromise) {
-    // @ts-ignore - dynamic WASM import at runtime
-    instancePromise = (async () => {
-      // @ts-ignore
-      const mod = await import('/wasm/pkg/minigraf.js')
-      await mod.default()
-      return mod.BrowserDb.open('minigraf')
-    })()
+    instancePromise = loadWasm()
   }
   return instancePromise
 }
