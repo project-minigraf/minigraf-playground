@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { ResultsTable } from './ResultsTable'
+import { ResultsGraph } from './ResultsGraph'
 import type { QueryResult } from '@/lib/types'
 
 interface ResultsPanelProps {
@@ -14,7 +15,7 @@ export function ResultsPanel({ result, error }: ResultsPanelProps) {
   const rowCount = result?.rows.length ?? 0
   const executionTime = result?.executionTimeMs ?? 0
   const hasError = !!error
-  const canShowGraph = !!result
+  const canGraph = result !== null && result.columns.length === 2
 
   return (
     <div className="flex flex-col h-full">
@@ -30,12 +31,15 @@ export function ResultsPanel({ result, error }: ResultsPanelProps) {
           )}
         </div>
         <button
-          onClick={() => setShowGraph(!showGraph)}
-          disabled={!canShowGraph}
-          className={`text-xs px-2 py-1 rounded transition-colors ${
-            result 
-              ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-              : 'bg-gray-800 text-gray-600 cursor-not-allowed'
+          onClick={() => setShowGraph((p) => !p)}
+          disabled={!canGraph}
+          title={canGraph ? 'Toggle graph view' : 'Graph requires exactly 2 columns'}
+          className={`text-xs px-2 py-0.5 rounded transition-colors ${
+            showGraph 
+              ? 'bg-blue-600 text-white' 
+              : canGraph
+                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                : 'bg-gray-800 text-gray-600 cursor-not-allowed'
           }`}
         >
           ⬡ Graph
@@ -43,17 +47,19 @@ export function ResultsPanel({ result, error }: ResultsPanelProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-3">
+      <div className="flex-1 overflow-hidden">
         {hasError ? (
-          <div className="border border-red-800 bg-red-900/20 rounded p-3">
-            <pre className="text-red-400 text-sm font-mono whitespace-pre-wrap">{error}</pre>
+          <div className="m-3 p-3 rounded-lg bg-red-950/40 border border-red-800 text-red-400 text-sm font-mono">
+            <pre className="whitespace-pre-wrap">{error}</pre>
           </div>
-        ) : result ? (
-          <ResultsTable result={result} />
-        ) : (
+        ) : !result ? (
           <div className="flex items-center justify-center h-full text-gray-500 text-sm">
             Run a query to see results.
           </div>
+        ) : showGraph && canGraph ? (
+          <ResultsGraph result={result} />
+        ) : (
+          <ResultsTable result={result} />
         )}
       </div>
     </div>
