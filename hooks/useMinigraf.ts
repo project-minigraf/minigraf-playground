@@ -57,7 +57,7 @@ export function useMinigraf() {
     }
     return {
       columns: (parsed.variables as string[]) ?? [],
-      rows: (parsed.results as unknown[][]) ?? [],
+      rows: (parsed.results as string[][]) ?? [],
       executionTimeMs: 0,
     }
   }
