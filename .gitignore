@@ -12,6 +12,9 @@
 /.next/
 /out/
 
+# minigraf wasm
+/public/wasm/
+
 # production
 /build
 

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "postinstall": "bash scripts/download-wasm.sh"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.71",
