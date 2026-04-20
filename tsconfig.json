@@ -30,6 +30,7 @@
   },
   "include": [
     "next-env.d.ts",
+    "minigraf.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
