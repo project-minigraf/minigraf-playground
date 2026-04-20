@@ -1,5 +1,5 @@
 'use client'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { datalogLanguage } from './datalog-lang'
 import { useMinigraf } from '@/hooks/useMinigraf'
@@ -14,19 +14,26 @@ interface QueryEditorProps {
 
 export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorProps) {
   const { status, error: wasmError, query } = useMinigraf()
+  const [queryError, setQueryError] = useState<string | null>(null)
 
   const handleRun = useCallback(async () => {
+    setQueryError(null)
     try {
       const result = await query(value)
       onResult(result)
     } catch (err) {
-      onError(err instanceof Error ? err.message : String(err))
+      const msg = err instanceof Error ? err.message : String(err)
+      setQueryError(msg)
+      onError(msg)
     }
   }, [value, query, onResult, onError])
 
   const handleChange = useCallback((val: string) => {
+    setQueryError(null)
     onChange(val)
   }, [onChange])
+
+  const displayError = queryError || wasmError
 
   return (
     <div className="flex flex-col h-full">
@@ -44,9 +51,9 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
           }}
         />
       </div>
-      {status === 'error' && wasmError && (
+      {displayError && (
         <div className="px-3 py-2 bg-red-900/50 text-red-300 text-sm border-t border-red-800">
-          WASM Error: {wasmError}
+          {queryError ? `Error: ${queryError}` : `WASM Error: ${wasmError}`}
         </div>
       )}
       <div className="flex items-center justify-between px-3 py-2 border-t border-gray-800 bg-gray-950">
