@@ -6,7 +6,10 @@ const createJestConfig = nextJest({ dir: './' })
 const config: Config = {
   testEnvironment: 'jest-environment-jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-  moduleNameMapper: { '^@/(.*)$': '<rootDir>/$1' },
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/$1',
+    '^/wasm/(.*)$': '<rootDir>/public/wasm/$1',
+  },
 }
 
 export default createJestConfig(config)
