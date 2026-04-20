@@ -99,6 +99,11 @@ export function useMinigraf() {
     if (allRows.length === 0 && forms.length > 0) {
       // Check if the forms had any query results - if empty, that's actually fine
     }
+
+    // If forms is empty but input has content, there's a syntax error (unmatched parens)
+    if (forms.length === 0 && trimmed.length > 0) {
+      throw new Error('Syntax error: unmatched parentheses or incomplete expression')
+    }
     
     return {
       columns: allVars,
