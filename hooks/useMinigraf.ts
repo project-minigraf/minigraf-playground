@@ -60,6 +60,7 @@ export function useMinigraf() {
     // Try parsing each form individually to get all results
     const allRows: string[][] = []
     const allVars: string[] = []
+    const startTime = performance.now()
     
     for (const form of forms) {
       const raw = await inst.execute(form)
@@ -108,7 +109,7 @@ export function useMinigraf() {
     return {
       columns: allVars,
       rows: allRows,
-      executionTimeMs: 0,
+      executionTimeMs: Math.round(performance.now() - startTime),
     }
   }
 

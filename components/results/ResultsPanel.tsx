@@ -12,6 +12,7 @@ export function ResultsPanel({ result, error }: ResultsPanelProps) {
   const [showGraph, setShowGraph] = useState(false)
 
   const rowCount = result?.rows.length ?? 0
+  const executionTime = result?.executionTimeMs ?? 0
   const hasError = !!error
   const canShowGraph = !!result
 
@@ -23,7 +24,7 @@ export function ResultsPanel({ result, error }: ResultsPanelProps) {
           {hasError ? (
             <span className="text-red-400">Error</span>
           ) : result ? (
-            <span>{rowCount} row{rowCount !== 1 ? 's' : ''}</span>
+            <span>{rowCount} row{rowCount !== 1 ? 's' : ''} · {executionTime}ms</span>
           ) : (
             <span>Results</span>
           )}
