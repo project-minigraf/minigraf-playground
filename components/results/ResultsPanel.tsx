@@ -13,6 +13,7 @@ export function ResultsPanel({ result, error }: ResultsPanelProps) {
 
   const rowCount = result?.rows.length ?? 0
   const hasError = !!error
+  const canShowGraph = !!result
 
   return (
     <div className="flex flex-col h-full">
@@ -29,7 +30,7 @@ export function ResultsPanel({ result, error }: ResultsPanelProps) {
         </div>
         <button
           onClick={() => setShowGraph(!showGraph)}
-          disabled={!result}
+          disabled={!canShowGraph}
           className={`text-xs px-2 py-1 rounded transition-colors ${
             result 
               ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
