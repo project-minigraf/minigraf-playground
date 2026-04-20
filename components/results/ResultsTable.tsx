@@ -17,9 +17,17 @@ export function ResultsTable({ result }: ResultsTableProps) {
   const sortedRows = useMemo(() => {
     if (sort.column < 0) return result.rows
     return [...result.rows].sort((a, b) => {
-      const aVal = String(a[sort.column] ?? '')
-      const bVal = String(b[sort.column] ?? '')
-      const cmp = aVal.localeCompare(bVal)
+      const aVal = a[sort.column]
+      const bVal = b[sort.column]
+      
+      let cmp: number
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        cmp = aVal - bVal
+      } else if (typeof aVal === 'number' || typeof bVal === 'number') {
+        cmp = String(aVal).localeCompare(String(bVal))
+      } else {
+        cmp = String(aVal ?? '').localeCompare(String(bVal ?? ''))
+      }
       return sort.direction === 'asc' ? cmp : -cmp
     })
   }, [result.rows, sort])
