@@ -35,6 +35,8 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
 
   const displayError = queryError || wasmError
 
+  const isReady = status === 'ready'
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-auto">
@@ -62,7 +64,7 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
         </span>
         <button
           onClick={handleRun}
-          disabled={status !== 'ready'}
+          disabled={!isReady}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded transition-colors"
         >
           <span>▶</span> Run
