@@ -7,11 +7,12 @@ import type { QueryResult } from '@/lib/types'
 
 type Mode = 'sandbox' | 'lessons'
 
-const DEFAULT_CODE = `%% Minigraf Datalog — try these examples:
-friend(alice, bob).
-friend(bob, charlie).
-?- friend(alice, ?x).
-`
+const DEFAULT_CODE = `; Minigraf Datalog — try these examples:
+(transact [[:alice :friend :bob]
+           [:bob :friend :charlie]])
+
+(query [:find ?x
+        :where [:alice :friend ?x]])`
 
 export function AppShell() {
   const [mode, setMode] = useState<Mode>('sandbox')
