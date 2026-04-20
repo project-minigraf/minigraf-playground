@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react'
 import { NavBar } from './NavBar'
 import { ResizeHandle } from './ResizeHandle'
 import { QueryEditor } from '@/components/editor/QueryEditor'
+import { ResultsPanel } from '@/components/results/ResultsPanel'
 import type { QueryResult } from '@/lib/types'
 
 type Mode = 'sandbox' | 'lessons'
@@ -66,17 +67,9 @@ export function AppShell() {
               onError={handleError}
             />
           </div>
-          {/* Results placeholder */}
-          <div className="h-1/2 flex items-center justify-center text-gray-500 border-t border-gray-800">
-            {queryError ? (
-              <p className="text-red-400">Error: {queryError}</p>
-            ) : queryResult ? (
-              <pre className="text-sm text-green-400">
-                {JSON.stringify(queryResult, null, 2)}
-              </pre>
-            ) : (
-              <p>Results — run a query to see results</p>
-            )}
+          {/* Results */}
+          <div className="h-1/2 border-t border-gray-800 overflow-hidden">
+            <ResultsPanel result={queryResult} error={queryError} />
           </div>
         </div>
 
