@@ -17,8 +17,8 @@ export function ResultsTable({ result }: ResultsTableProps) {
   const sortedRows = useMemo(() => {
     if (sort.column < 0) return result.rows
     return [...result.rows].sort((a, b) => {
-      const aVal = a[sort.column] ?? ''
-      const bVal = b[sort.column] ?? ''
+      const aVal = String(a[sort.column] ?? '')
+      const bVal = String(b[sort.column] ?? '')
       const cmp = aVal.localeCompare(bVal)
       return sort.direction === 'asc' ? cmp : -cmp
     })
