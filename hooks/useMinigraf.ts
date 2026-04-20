@@ -9,6 +9,7 @@ function splitForms(src: string): string[] {
   const forms: string[] = []
   let depth = 0
   let start = -1
+  
   for (let i = 0; i < src.length; i++) {
     const ch = src[i]
     if (ch === '(') {
@@ -49,15 +50,59 @@ export function useMinigraf() {
     if (!instanceRef.current) throw new Error('Minigraf not ready')
     const inst = instanceRef.current as { execute: (q: string) => Promise<string> }
     const forms = splitForms(datalog)
-    if (forms.length === 0) throw new Error('No statements to execute')
-    let parsed: Record<string, unknown> = {}
+    
+    // If no forms found, check if there's any non-empty content
+    const trimmed = datalog.trim()
+    if (!trimmed) {
+      throw new Error('No statements to execute')
+    }
+    
+    // Try parsing each form individually to get all results
+    const allRows: string[][] = []
+    const allVars: string[] = []
+    
     for (const form of forms) {
       const raw = await inst.execute(form)
-      parsed = JSON.parse(raw)
+      
+      // Try to parse and check for errors
+      let parsed: Record<string, unknown>
+      try {
+        parsed = JSON.parse(raw)
+      } catch {
+        // If we can't parse the response at all, it's likely an error string
+        throw new Error(raw)
+      }
+      
+      // Check for error fields (different WASM error formats)
+      if ('error' in parsed) {
+        throw new Error(String(parsed.error))
+      }
+      
+      // Get variables and results from this form
+      const vars = (parsed.variables as string[]) ?? []
+      const rows = (parsed.results as string[][]) ?? []
+      
+      // Check for ok: true which means a transact/retract was successful
+      if ('ok' in parsed) {
+        // This was a mutating operation, not a query
+        continue
+      }
+      
+      // Check for executed queries
+      if (vars.length > 0) {
+        allVars.push(...vars)
+        allRows.push(...rows)
+      }
     }
+    
+    // If we got here but no vars/rows from queries, check if any forms would have worked
+    if (allRows.length === 0 && forms.length > 0) {
+      // Check if the forms had any query results - if empty, that's actually fine
+    }
+    
     return {
-      columns: (parsed.variables as string[]) ?? [],
-      rows: (parsed.results as string[][]) ?? [],
+      columns: allVars,
+      rows: allRows,
       executionTimeMs: 0,
     }
   }
