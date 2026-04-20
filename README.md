@@ -29,8 +29,11 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deploy to Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Fork this repo and import it in [Vercel](https://vercel.com/new).
+2. Set the following environment variables in the Vercel dashboard:
+   - `GROQ_API_KEY` — get one free at https://console.groq.com
+   - `COOKIE_SECRET` — run `openssl rand -hex 32` locally
+   - `NEXT_PUBLIC_APP_URL` — your Vercel deployment URL
+3. Deploy. The `postinstall` script automatically downloads the Minigraf WASM binary.
