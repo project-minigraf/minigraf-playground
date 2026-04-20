@@ -30,7 +30,7 @@ export async function loadMinigraf() {
   const originalFetch = window.fetch
   
   window.fetch = async (input: RequestInfo | URL): Promise<Response> => {
-    const url = typeof input === 'string' ? input : (input as Request).url
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url
     if (url.includes('minigraf_bg.wasm')) {
       return new Response(wasmBuffer, { 
         headers: { 'Content-Type': 'application/wasm' } 
