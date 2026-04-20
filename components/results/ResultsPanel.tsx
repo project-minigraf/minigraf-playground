@@ -35,7 +35,7 @@ export function ResultsPanel({ result, error }: ResultsPanelProps) {
           disabled={!canGraph}
           title={canGraph ? 'Toggle graph view' : 'Graph requires exactly 2 columns'}
           className={`text-xs px-2 py-0.5 rounded transition-colors ${
-            showGraph 
+            showGraph && canGraph
               ? 'bg-blue-600 text-white' 
               : canGraph
                 ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
