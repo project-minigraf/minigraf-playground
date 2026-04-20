@@ -50,13 +50,11 @@ export async function loadMinigraf() {
     // With blob URL, import.meta.url = blob URL, so path will be wrong
     // Need to fix the path calculation
     
-    // Fix JS: replace import.meta.url usage with fixed path
+    // Fix JS: replace import.meta.url with a full absolute URL so that
+    // new URL('minigraf_bg.wasm', <base>) resolves correctly in the browser.
     const fixedJs = jsCode.replace(
       /import\.meta\.url/g,
-      "'/wasm/pkg/minigraf.js'"
-    ).replace(
-      /new URL\('minigraf_bg\.wasm', import\.meta\.url\)/g,
-      "fetch('/wasm/pkg/minigraf_bg.wasm')"
+      "(location.origin + '/wasm/pkg/minigraf.js')"
     )
     
     const fixedBlob = new Blob([fixedJs], { type: 'application/javascript' })
