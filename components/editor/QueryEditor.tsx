@@ -66,7 +66,7 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
         </span>
         <button
           onClick={handleRun}
-          disabled={!isReady}
+          disabled={canRun === false}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded transition-colors"
         >
           <span>▶</span> Run
