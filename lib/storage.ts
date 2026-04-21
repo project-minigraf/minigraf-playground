@@ -57,3 +57,13 @@ export async function setChatHistory(key: string, messages: ChatMessage[]): Prom
 export async function clearChatHistory(key: string): Promise<void> {
   await (await getDB()).put('chat_history', [], key)
 }
+export async function clearAllChatHistory(): Promise<void> {
+  const db = await getDB()
+  const tx = db.transaction('chat_history', 'readwrite')
+  const store = tx.objectStore('chat_history')
+  const keys = await store.getAllKeys()
+  for (const key of keys) {
+    await store.put([], key)
+  }
+  await tx.done
+}
