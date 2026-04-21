@@ -1,7 +1,5 @@
 'use client'
-import { useState } from 'react'
 import { ResultsTable } from './ResultsTable'
-import { ResultsGraph } from './ResultsGraph'
 import type { QueryResult } from '@/lib/types'
 
 interface ResultsPanelProps {
@@ -10,12 +8,9 @@ interface ResultsPanelProps {
 }
 
 export function ResultsPanel({ result, error }: ResultsPanelProps) {
-  const [showGraph, setShowGraph] = useState(false)
-
   const rowCount = result?.rows.length ?? 0
   const executionTime = result?.executionTimeMs ?? 0
   const hasError = !!error
-  const canGraph = result !== null && result.columns.length === 2
 
   return (
     <div className="flex flex-col h-full">
@@ -30,20 +25,6 @@ export function ResultsPanel({ result, error }: ResultsPanelProps) {
             <span>Results</span>
           )}
         </div>
-        <button
-          onClick={() => setShowGraph((p) => !p)}
-          disabled={!canGraph}
-          title={canGraph ? 'Toggle graph view' : 'Graph requires exactly 2 columns'}
-          className={`text-xs px-2 py-0.5 rounded transition-colors ${
-            showGraph && canGraph
-              ? 'bg-blue-600 text-white' 
-              : canGraph
-                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                : 'bg-gray-800 text-gray-600 cursor-not-allowed'
-          }`}
-        >
-          ⬡ Graph
-        </button>
       </div>
 
       {/* Content */}
@@ -56,8 +37,6 @@ export function ResultsPanel({ result, error }: ResultsPanelProps) {
           <div className="flex items-center justify-center h-full text-gray-500 text-sm">
             Run a query to see results.
           </div>
-        ) : showGraph && canGraph ? (
-          <ResultsGraph result={result} />
         ) : (
           <ResultsTable result={result} />
         )}
