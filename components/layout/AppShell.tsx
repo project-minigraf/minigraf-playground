@@ -167,7 +167,11 @@ export function AppShell() {
 
       {/* Settings drawer */}
       {settingsOpen && (
-        <SettingsDrawer onClose={() => setSettingsOpen(false)} />
+        <SettingsDrawer onClose={async () => {
+          setSettingsOpen(false)
+          const prefs = await getSessionPrefs()
+          setSessionPrefsState(prefs)
+        }} />
       )}
     </div>
   )
