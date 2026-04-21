@@ -36,6 +36,8 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
   const displayError = queryError || wasmError
 
   const isReady = status === 'ready'
+  const canRun = status === 'ready' ? true : false
+  const statusText = status === 'loading' ? 'Loading...' : status === 'ready' ? 'Ready' : status === 'error' ? 'Error' : ''
 
   return (
     <div className="flex flex-col h-full">
@@ -60,7 +62,7 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
       )}
       <div className="flex items-center justify-between px-3 py-2 border-t border-gray-800 bg-gray-950">
         <span className="text-xs text-gray-500">
-          {status === 'loading' ? 'Loading...' : status === 'ready' ? 'Ready' : 'Error'}
+          {statusText}
         </span>
         <button
           onClick={handleRun}
