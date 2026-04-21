@@ -8,6 +8,7 @@ import { LessonSidebar } from '@/components/lessons/LessonSidebar'
 import { SettingsDrawer } from '@/components/settings/SettingsDrawer'
 import { ChatPanel } from '@/components/chat/ChatPanel'
 import { getSessionPrefs, setSessionPrefs } from '@/lib/storage'
+import { buildSystemPrompt } from '@/lib/system-prompt'
 import type { QueryResult, SessionPrefs } from '@/lib/types'
 
 type Mode = 'sandbox' | 'lessons'
@@ -107,7 +108,7 @@ export function AppShell() {
             chatKey={mode === 'lessons' ? (activeLessonId ?? 'sandbox') : 'sandbox'}
             provider={sessionPrefs?.provider ?? 'groq'}
             model={sessionPrefs?.model ?? 'llama-3.3-70b-versatile'}
-            systemPrompt=""
+            systemPrompt={buildSystemPrompt({ lessonStepGoal: null, progress: [] })}
             onOpenSettings={() => setSettingsOpen(true)}
           />
         </div>
