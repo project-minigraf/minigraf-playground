@@ -5,17 +5,17 @@ import type { ChatMessage, Provider } from '@/lib/types'
 function getAuthHeader(provider: Provider, apiKey: string): Record<string, string> {
   switch (provider) {
     case 'anthropic': return { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }
-    case 'openai': 
+    case 'openai':
     case 'xai': return { 'Authorization': `Bearer ${apiKey}` }
-    case 'gemini': return { 'x-goog-api-key': apiKey }
+    case 'gemini': return {}  // Gemini key goes in URL query param to avoid CORS preflight
   }
 }
 
-function getProviderUrl(provider: Provider, model: string): string {
+function getProviderUrl(provider: Provider, model: string, apiKey?: string): string {
   switch (provider) {
     case 'anthropic': return 'https://api.anthropic.com/v1/messages'
     case 'openai': return 'https://api.openai.com/v1/chat/completions'
-    case 'gemini': return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+    case 'gemini': return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey ?? '')}`
     case 'xai': return 'https://api.x.ai/v1/chat/completions'
   }
 }
@@ -55,7 +55,7 @@ export function useChat() {
           ? [{ role: 'system', content: systemPrompt }, ...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user', content }]
           : [...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user', content }]
 
-        const url = getProviderUrl(provider, model)
+        const url = getProviderUrl(provider, model, apiKey)
         const headers = { ...getAuthHeader(provider, apiKey), 'Content-Type': 'application/json' }
         const body = getProviderBody(provider, allMessages, model)
 

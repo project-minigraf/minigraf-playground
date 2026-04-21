@@ -25,7 +25,7 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
   const [provider, setProvider] = useState<Provider>('gemini')
   const [model, setModel] = useState('')
   const [apiKey, setApiKeyState] = useState('')
-  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle')
+  const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'failed' | 'unreachable'>('idle')
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
@@ -50,15 +50,45 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
     })
   }, [])
 
-const handleTestConnection = useCallback(async () => {
+  const handleTestConnection = useCallback(async () => {
     if (!apiKey) return
     setTestStatus('testing')
-    // Most providers have CORS issues with test endpoints
-    // Just verify key exists - real chat will reveal actual auth issues
-    // Use a small timeout to show "Testing..." state briefly
-    await new Promise(r => setTimeout(r, 500))
-    setTestStatus(apiKey && apiKey.startsWith('sk-') ? 'success' : 'failed')
-  }, [apiKey])
+    try {
+      let res: Response
+      switch (provider) {
+        case 'anthropic':
+          // CORS preflight for Anthropic may fail from non-HTTPS origins (returns 400, no allow-origin)
+          // Real network call attempted; TypeError catch below handles CORS block
+          res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: 'claude-haiku-4-5', messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
+          })
+          break
+        case 'openai':
+          res = await fetch('https://api.openai.com/v1/models', {
+            headers: { 'Authorization': `Bearer ${apiKey}` },
+          })
+          break
+        case 'gemini':
+          // Key in query string avoids custom auth header → no CORS preflight
+          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`)
+          break
+        case 'xai':
+          res = await fetch('https://api.x.ai/v1/models', {
+            headers: { 'Authorization': `Bearer ${apiKey}` },
+          })
+          break
+        default:
+          res = new Response(null, { status: 400 })
+      }
+      // 401/403 = provider explicitly rejected the key; anything else = key reached the API
+      setTestStatus(res.status === 401 || res.status === 403 ? 'failed' : 'success')
+    } catch {
+      // fetch throws TypeError on network error; CORS blocks are indistinguishable from network errors in JS
+      setTestStatus('unreachable')
+    }
+  }, [apiKey, provider])
 
   const handleClear = useCallback(async () => {
     await clearApiKey(provider)
@@ -141,7 +171,8 @@ const handleTestConnection = useCallback(async () => {
         </div>
 
         {testStatus === 'success' && <div className="text-green-400 text-sm">✓ Connected</div>}
-        {testStatus === 'failed' && <div className="text-red-400 text-sm">✗ Failed</div>}
+        {testStatus === 'failed' && <div className="text-red-400 text-sm">✗ Key rejected by provider</div>}
+        {testStatus === 'unreachable' && <div className="text-amber-300 text-sm">⚠ Cannot reach provider from this origin — key format looks valid; test on a deployed HTTPS origin</div>}
 
         <button
           onClick={handleSave}
