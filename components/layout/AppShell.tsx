@@ -14,6 +14,7 @@ import { ChatPanel } from '@/components/chat/ChatPanel'
 import { getSessionPrefs, setSessionPrefs, clearAllChatHistory } from '@/lib/storage'
 import { buildSystemPrompt } from '@/lib/system-prompt'
 import { useMinigraf } from '@/hooks/useMinigraf'
+import { useLesson } from '@/hooks/useLesson'
 import type { QueryResult, SessionPrefs } from '@/lib/types'
 
 type Mode = 'sandbox' | 'lessons'
@@ -39,6 +40,7 @@ export function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [leftWidthPct, setLeftWidthPct] = useState(66)
   const [editorValue, setEditorValue] = useState(DEFAULT_CODE)
+  const [completedStepsPerLesson, setCompletedStepsPerLesson] = useState<Record<string, string[]>>({})
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
   const [queryError, setQueryError] = useState<string | null>(null)
   const [lastQuery, setLastQuery] = useState<string>('')
@@ -90,6 +92,24 @@ export function AppShell() {
     setLessonCompletedSteps([])
   }, [])
 
+  const { status, error: wasmError, query } = useMinigraf()
+  const lessonRunner = useLesson(mode === 'lessons' ? activeLessonId : null)
+
+  useEffect(() => {
+    if (lessonRunner.starterCode) {
+      setEditorValue(lessonRunner.starterCode)
+    }
+  }, [lessonRunner.starterCode])
+
+  useEffect(() => {
+    if (activeLessonId) {
+      setCompletedStepsPerLesson((prev) => ({
+        ...prev,
+        [activeLessonId]: lessonRunner.completedSteps,
+      }))
+    }
+  }, [activeLessonId, lessonRunner.completedSteps])
+
   const handleResult = useCallback((result: QueryResult, queryCode?: string) => {
     setQueryResult(result)
     setQueryError(null)
@@ -102,8 +122,6 @@ export function AppShell() {
     setQueryError(error)
     setQueryResult(null)
   }, [])
-
-  const { status, error: wasmError, query } = useMinigraf()
 
   const handleRunQueryFromChat = useCallback((code: string) => {
     if (status !== 'ready') return
@@ -123,6 +141,7 @@ export function AppShell() {
         {mode === 'lessons' && (
           <LessonSidebar
             activeLessonId={activeLessonId}
+            completedStepsPerLesson={completedStepsPerLesson}
             onSelect={handleActiveLessonChange}
           />
         )}
