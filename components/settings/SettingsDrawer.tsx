@@ -59,19 +59,13 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
       let res: Response
       switch (provider) {
         case 'anthropic':
-          // Anthropic requires full request - use a minimal one
-          res = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
+          // Use GET /v1/models to verify key without CORS issues
+          res = await fetch('https://api.anthropic.com/v1/models', {
+            method: 'GET',
             headers: {
               'x-api-key': apiKey,
               'anthropic-version': '2023-06-01',
-              'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ 
-              model: 'claude-haiku-5-2025-05-20', 
-              messages: [{ role: 'user', content: 'hi' }], 
-              max_tokens: 5 
-            }),
           })
           break
         case 'openai':
