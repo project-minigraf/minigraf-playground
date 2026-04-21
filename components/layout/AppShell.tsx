@@ -11,7 +11,7 @@ import { ResultsPanel } from '@/components/results/ResultsPanel'
 import { LessonSidebar } from '@/components/lessons/LessonSidebar'
 import { SettingsDrawer } from '@/components/settings/SettingsDrawer'
 import { ChatPanel } from '@/components/chat/ChatPanel'
-import { getSessionPrefs, setSessionPrefs } from '@/lib/storage'
+import { getSessionPrefs, setSessionPrefs, clearChatHistory } from '@/lib/storage'
 import { buildSystemPrompt } from '@/lib/system-prompt'
 import { useMinigraf } from '@/hooks/useMinigraf'
 import type { QueryResult, SessionPrefs } from '@/lib/types'
@@ -52,6 +52,16 @@ export function AppShell() {
       setSessionPrefsState(prefs)
     })
   }, [])
+
+  // Clear chat history when provider changes to avoid stale errors
+  const prevProviderRef = useRef<string | null>(null)
+  useEffect(() => {
+    const currentProvider = sessionPrefs?.provider
+    if (currentProvider && prevProviderRef.current !== null && prevProviderRef.current !== currentProvider) {
+      clearChatHistory(prevProviderRef.current)
+    }
+    prevProviderRef.current = currentProvider ?? null
+  }, [sessionPrefs?.provider])
 
   const handleResize = useCallback((deltaX: number) => {
     setLeftWidthPct((prev) => {
