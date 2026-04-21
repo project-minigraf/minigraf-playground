@@ -103,6 +103,7 @@ export function AppShell() {
   const { status, error: wasmError, query } = useMinigraf()
   const lessonRunner = useLesson(mode === 'lessons' ? activeLessonId : null)
   const [lessonReady, setLessonReady] = useState(false)
+  const [lessonIntroTrigger, setLessonIntroTrigger] = useState(0)
 
   useEffect(() => {
     if (lessonRunner.starterCode) {
@@ -113,6 +114,7 @@ export function AppShell() {
   useEffect(() => {
     if (lessonRunner.lesson && lessonRunner.totalSteps > 0) {
       setLessonReady(true)
+      setLessonIntroTrigger((t) => t + 1)
     }
   }, [lessonRunner.lesson, lessonRunner.totalSteps])
 
@@ -204,6 +206,7 @@ export function AppShell() {
               currentStep: lessonRunner.currentStep?.instruction ?? undefined,
             } : undefined}
             introEnabled={prefsLoaded && (mode !== 'lessons' ? true : lessonReady)}
+            introTrigger={lessonIntroTrigger}
             onOpenSettings={() => setSettingsOpen(true)}
             onRunQuery={status === 'ready' ? handleRunQueryFromChat : undefined}
           />

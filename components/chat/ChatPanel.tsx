@@ -97,6 +97,7 @@ interface ChatPanelProps {
   systemPrompt: string
   introContext?: { lessonTitle?: string; lessonGoals?: string; currentStep?: string }
   introEnabled?: boolean
+  introTrigger?: number
   onOpenSettings: () => void
   onRunQuery?: (code: string) => void
 }
@@ -141,7 +142,7 @@ function getProviderBody(provider: string, messages: { role: string; content: st
   }
 }
 
-export function ChatPanel({ chatKey, provider, model, systemPrompt, introContext, introEnabled, onOpenSettings, onRunQuery }: ChatPanelProps) {
+export function ChatPanel({ chatKey, provider, model, systemPrompt, introContext, introEnabled, introTrigger, onOpenSettings, onRunQuery }: ChatPanelProps) {
   const [showAnonBanner, setShowAnonBanner] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<StoredChatMessage[]>([])
@@ -274,8 +275,13 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
   }, [chatKey])
 
   useEffect(() => {
+    introFiredRef.current.delete(chatKey)
+  }, [chatKey])
+
+  useEffect(() => {
+    if (!introEnabled) return
     getChatHistory(chatKey).then((history) => {
-      if (history.length === 0 && introEnabled && !introFiredRef.current.has(chatKey)) {
+      if (history.length === 0 && !introFiredRef.current.has(chatKey)) {
         introFiredRef.current.add(chatKey)
         const prompt = buildIntroPrompt(introContext)
         const introMsgs: LLMMessage[] = [
@@ -285,7 +291,7 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
         callLLMRef.current(introMsgs)
       }
     })
-  }, [chatKey, introEnabled])
+  }, [chatKey, introEnabled, introTrigger])
 
   useEffect(() => {
     if (messages.length > 0) {
