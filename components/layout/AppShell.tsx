@@ -77,7 +77,7 @@ export function AppShell() {
         {/* Left panel */}
         <div
           className="flex flex-col overflow-hidden"
-          style={{ width: mode === 'lessons' ? '100%' : `${leftWidthPct}%` }}
+          style={{ width: `${leftWidthPct}%` }}
         >
           {/* Editor */}
           <div className="flex-1 overflow-hidden">
