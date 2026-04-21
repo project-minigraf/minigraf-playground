@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useState, useEffect } from 'react'
+import { useCallback, useState, useEffect, useLayoutEffect } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { datalogLanguage } from './datalog-lang'
 import { useMinigraf } from '@/hooks/useMinigraf'
@@ -8,24 +8,24 @@ import type { QueryResult } from '@/lib/types'
 interface QueryEditorProps {
   value: string
   onChange: (value: string) => void
-  onResult: (result: QueryResult) => void
+  onResult: (result: QueryResult, queryCode?: string) => void
   onError: (error: string) => void
 }
 
 export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorProps) {
   const { status, error: wasmError, query } = useMinigraf()
   const [queryError, setQueryError] = useState<string | null>(null)
-  const [hydrated, setHydrated] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    setHydrated(true)
+  useLayoutEffect(() => {
+    setMounted(true)
   }, [])
 
   const handleRun = useCallback(async () => {
     setQueryError(null)
     try {
       const result = await query(value)
-      onResult(result)
+      onResult(result, value)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setQueryError(msg)
@@ -41,7 +41,7 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
   const displayError = queryError || wasmError
 
   const isReady = status === 'ready'
-  const canRun = hydrated && isReady
+  const canRun = mounted && isReady
   const statusText = status === 'loading' ? 'Loading...' : status === 'ready' ? 'Ready' : status === 'error' ? 'Error' : ''
 
   return (

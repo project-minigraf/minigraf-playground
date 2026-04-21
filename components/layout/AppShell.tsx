@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { NavBar } from './NavBar'
 import { ResizeHandle } from './ResizeHandle'
 import { QueryEditor } from '@/components/editor/QueryEditor'
@@ -9,6 +9,7 @@ import { SettingsDrawer } from '@/components/settings/SettingsDrawer'
 import { ChatPanel } from '@/components/chat/ChatPanel'
 import { getSessionPrefs, setSessionPrefs } from '@/lib/storage'
 import { buildSystemPrompt } from '@/lib/system-prompt'
+import { useMinigraf } from '@/hooks/useMinigraf'
 import type { QueryResult, SessionPrefs } from '@/lib/types'
 
 type Mode = 'sandbox' | 'lessons'
@@ -27,6 +28,7 @@ export function AppShell() {
   const [editorValue, setEditorValue] = useState(DEFAULT_CODE)
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
   const [queryError, setQueryError] = useState<string | null>(null)
+  const [lastQuery, setLastQuery] = useState<string>('')
   const [sessionPrefs, setSessionPrefsState] = useState<SessionPrefs | null>(null)
 
   useEffect(() => {
@@ -53,15 +55,26 @@ export function AppShell() {
     await setSessionPrefs(prefs)
   }, [])
 
-  const handleResult = useCallback((result: QueryResult) => {
+  const handleResult = useCallback((result: QueryResult, queryCode?: string) => {
     setQueryResult(result)
     setQueryError(null)
+    if (queryCode) {
+      setLastQuery(queryCode)
+    }
   }, [])
 
   const handleError = useCallback((error: string) => {
     setQueryError(error)
     setQueryResult(null)
   }, [])
+
+  const { status, error: wasmError, query } = useMinigraf()
+
+  const handleRunQueryFromChat = useCallback((code: string) => {
+    if (status !== 'ready') return
+    setLastQuery(code)
+    query(code).then((result) => handleResult(result, code)).catch(handleError)
+  }, [status, query, handleResult, handleError])
 
   return (
     <div className="h-screen flex flex-col bg-gray-900">
@@ -95,7 +108,7 @@ export function AppShell() {
           </div>
           {/* Results */}
           <div className="h-1/2 border-t border-gray-800 overflow-hidden">
-            <ResultsPanel result={queryResult} error={queryError} />
+            <ResultsPanel result={queryResult} error={queryError} query={lastQuery} />
           </div>
         </div>
 
@@ -110,6 +123,7 @@ export function AppShell() {
             model={sessionPrefs?.model ?? 'llama-3.3-70b-versatile'}
             systemPrompt={buildSystemPrompt({ lessonStepGoal: null, progress: [] })}
             onOpenSettings={() => setSettingsOpen(true)}
+            onRunQuery={status === 'ready' ? handleRunQueryFromChat : undefined}
           />
         </div>
       </div>

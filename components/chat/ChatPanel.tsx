@@ -1,7 +1,81 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { Trash2 } from 'lucide-react'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import { Trash2, Copy, Check, Play } from 'lucide-react'
+
+function CodeBlock({ language, children, onRun }: { language: string; children: React.ReactNode; onRun?: (code: string) => void }) {
+  const [copied, setCopied] = useState(false)
+  const [running, setRunning] = useState(false)
+  const code = String(children).replace(/\n$/, '')
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleRun = async () => {
+    if (!onRun) return
+    setRunning(true)
+    try {
+      onRun(code)
+    } finally {
+      setTimeout(() => setRunning(false), 500)
+    }
+  }
+
+  return (
+    <div className="relative group overflow-x-auto rounded bg-gray-900">
+      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {onRun && (
+          <button
+            onClick={handleRun}
+            className="p-1.5 rounded bg-gray-700/80 hover:bg-gray-600"
+            title="Run query"
+            disabled={running}
+          >
+            {running ? (
+              <span className="w-3.5 h-3.5 block animate-spin border border-gray-300 border-t-transparent rounded-full" />
+            ) : (
+              <Play className="w-3.5 h-3.5 text-green-400" />
+            )}
+          </button>
+        )}
+        <button
+          onClick={handleCopy}
+          className="p-1.5 rounded bg-gray-700/80 hover:bg-gray-600"
+          title={copied ? 'Copied!' : 'Copy code'}
+        >
+          {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5 text-gray-300" />}
+        </button>
+      </div>
+      <SyntaxHighlighter
+        style={oneDark as Record<string, React.CSSProperties>}
+        language={language}
+        PreTag="div"
+        className="text-xs"
+      >
+        {code}
+      </SyntaxHighlighter>
+    </div>
+  )
+}
+
+function createCodeRenderer(onRunQuery?: (code: string) => void) {
+  return function CodeRenderer({ className, children, ...props }: { className?: string; children?: React.ReactNode }) {
+    const match = /language-(\w+)/.exec(className || '')
+    const inline = !match
+    return !inline ? (
+      <CodeBlock language={match[1]} onRun={onRunQuery}>{children}</CodeBlock>
+    ) : (
+      <code className="bg-gray-700 px-1 py-0.5 rounded text-xs" {...props}>
+        {children}
+      </code>
+    )
+  }
+}
 import { AnonCapBanner } from './AnonCapBanner'
 import { getChatHistory, setChatHistory, clearChatHistory, getApiKey } from '@/lib/storage'
 import type { ChatMessage as StoredChatMessage, Provider } from '@/lib/types'
@@ -12,6 +86,7 @@ interface ChatPanelProps {
   model: string
   systemPrompt: string
   onOpenSettings: () => void
+  onRunQuery?: (code: string) => void
 }
 
 function roleToAlignment(role: string) {
@@ -52,13 +127,15 @@ function getProviderBody(provider: string, messages: { role: string; content: st
   }
 }
 
-export function ChatPanel({ chatKey, provider, model, systemPrompt, onOpenSettings }: ChatPanelProps) {
+export function ChatPanel({ chatKey, provider, model, systemPrompt, onOpenSettings, onRunQuery }: ChatPanelProps) {
   const [showAnonBanner, setShowAnonBanner] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<StoredChatMessage[]>([])
   const [loading, setLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+
+  const codeRenderer = useMemo(() => createCodeRenderer(onRunQuery), [onRunQuery])
 
   useEffect(() => {
     getChatHistory(chatKey).then(setMessages)
@@ -226,7 +303,11 @@ export function ChatPanel({ chatKey, provider, model, systemPrompt, onOpenSettin
             <div className={`max-w-[85%] rounded-lg px-3 py-2 ${roleToBg(m.role)}`}>
               {m.role === 'assistant' ? (
                 <div className="prose prose-invert prose-sm text-gray-100">
-                  <ReactMarkdown>{m.content}</ReactMarkdown>
+                  <ReactMarkdown
+                    components={{ code: codeRenderer }}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
                 </div>
               ) : (
                 <p className="text-white text-sm whitespace-pre-wrap">{m.content}</p>
