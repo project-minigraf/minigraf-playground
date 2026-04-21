@@ -17,6 +17,10 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
   const [queryError, setQueryError] = useState<string | null>(null)
   const [hydrated, setHydrated] = useState(false)
 
+  useEffect(() => {
+    setHydrated(true)
+  }, [])
+
   const handleRun = useCallback(async () => {
     setQueryError(null)
     try {
