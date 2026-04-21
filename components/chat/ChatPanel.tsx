@@ -270,9 +270,12 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
   useEffect(() => { callLLMRef.current = callLLM }, [callLLM])
 
   useEffect(() => {
+    introFiredRef.current.delete(chatKey)
+  }, [chatKey])
+
+  useEffect(() => {
     getChatHistory(chatKey).then((history) => {
-      setMessages(history)
-      if (history.length === 0 && !introFiredRef.current.has(chatKey) && introEnabled) {
+      if (history.length === 0 && introEnabled && !introFiredRef.current.has(chatKey)) {
         introFiredRef.current.add(chatKey)
         const prompt = buildIntroPrompt(introContext)
         const introMsgs: LLMMessage[] = [
@@ -282,7 +285,7 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
         callLLMRef.current(introMsgs)
       }
     })
-  }, [chatKey, introEnabled]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [chatKey, introEnabled])
 
   useEffect(() => {
     if (messages.length > 0) {

@@ -19,7 +19,7 @@ import type { QueryResult, SessionPrefs } from '@/lib/types'
 
 type Mode = 'sandbox' | 'lessons'
 
-const LESSON_INTROS: Record<string, { lessonTitle: string; lessonGoals: string }> = {
+const LESSON_INTROS: Record<string, { lessonTitle: string; lessonGoals: string; currentStep?: string }> = {
   'lesson-1': { lessonTitle: 'Basic Facts and Queries', lessonGoals: 'asserting and retracting facts, running basic Datalog queries, and reading query results' },
   'lesson-2': { lessonTitle: 'Rules and Inference', lessonGoals: 'defining rules to derive new facts, and using recursive rules for graph traversal' },
   'lesson-3': { lessonTitle: 'Recursive Rules', lessonGoals: 'writing fixed-point recursive rules and understanding semi-naive evaluation' },
