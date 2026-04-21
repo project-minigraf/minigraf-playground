@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
-import { keymap, type KeyBinding } from '@codemirror/view'
+import { EditorView } from '@codemirror/view'
 import { datalogLanguage } from './datalog-lang'
 import { useMinigraf } from '@/hooks/useMinigraf'
 import type { QueryResult } from '@/lib/types'
@@ -29,10 +29,12 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
     }
   }, [value, query, onResult, onError])
 
-  const runKeymap: KeyBinding[] = [
-    { key: 'Ctrl-Enter', run: () => { handleRun(); return true } },
-    { key: 'Cmd-Enter', mac: 'Cmd-Enter', run: () => { handleRun(); return true } },
-  ]
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault()
+      handleRun()
+    }
+  }, [handleRun])
 
   const handleChange = useCallback((val: string) => {
     setQueryError(null)
@@ -50,13 +52,16 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
         <CodeMirror
           value={value}
           onChange={handleChange}
-          extensions={[datalogLanguage, keymap.of(runKeymap)]}
+          extensions={[datalogLanguage]}
           theme="dark"
           className="h-full text-sm"
           basicSetup={{
             lineNumbers: true,
             highlightActiveLineGutter: true,
             foldGutter: false,
+          }}
+          onCreateEditor={(view: EditorView) => {
+            view.scrollDOM.addEventListener('keydown', handleKeyDown)
           }}
         />
       </div>
