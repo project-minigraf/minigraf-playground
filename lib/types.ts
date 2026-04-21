@@ -1,4 +1,4 @@
-export type Provider = 'gemini' | 'anthropic' | 'openai' | 'xai'
+export type Provider = 'gemini' | 'anthropic' | 'openai' | 'xai' | 'groq'
 
 export type QueryResult = {
   columns: string[]

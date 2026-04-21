@@ -4,17 +4,19 @@ import { getSessionPrefs, setSessionPrefs, getApiKey, setApiKey, clearApiKey } f
 import type { Provider } from '@/lib/types'
 
 const PROVIDERS: { id: Provider; name: string }[] = [
-  { id: 'gemini', name: 'Google Gemini' },
   { id: 'anthropic', name: 'Anthropic Claude' },
+  { id: 'gemini', name: 'Google Gemini' },
   { id: 'openai', name: 'OpenAI' },
   { id: 'xai', name: 'xAI Grok' },
+  { id: 'groq', name: 'Groq (free)' },
 ]
 
 const MODELS: Record<Provider, string[]> = {
-  gemini: ['gemini-2.5-flash', 'gemini-2.5-pro'],
   anthropic: ['claude-haiku-4-5', 'claude-sonnet-4-6'],
+  gemini: ['gemini-2.5-flash', 'gemini-2.5-pro'],
   openai: ['gpt-4.1-nano', 'gpt-4.1-mini', 'gpt-4.1'],
   xai: ['grok-3-mini', 'grok-3'],
+  groq: ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768'],
 }
 
 interface SettingsDrawerProps {
@@ -22,7 +24,7 @@ interface SettingsDrawerProps {
 }
 
 export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
-  const [provider, setProvider] = useState<Provider>('gemini')
+  const [provider, setProvider] = useState<Provider>('groq')
   const [model, setModel] = useState('')
   const [apiKey, setApiKeyState] = useState('')
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'failed' | 'unreachable'>('idle')

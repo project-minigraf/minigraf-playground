@@ -6,8 +6,10 @@ function getAuthHeader(provider: Provider, apiKey: string): Record<string, strin
   switch (provider) {
     case 'anthropic': return { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }
     case 'openai':
-    case 'xai': return { 'Authorization': `Bearer ${apiKey}` }
+    case 'xai':
+    case 'groq': return { 'Authorization': `Bearer ${apiKey}` }
     case 'gemini': return {}  // Gemini key goes in URL query param to avoid CORS preflight
+    default: return {}
   }
 }
 
@@ -17,16 +19,20 @@ function getProviderUrl(provider: Provider, model: string, apiKey?: string): str
     case 'openai': return 'https://api.openai.com/v1/chat/completions'
     case 'gemini': return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey ?? '')}`
     case 'xai': return 'https://api.x.ai/v1/chat/completions'
+    case 'groq': return 'https://api.groq.com/openai/v1/chat/completions'
+    default: return '/api/chat'
   }
 }
 
 function getProviderBody(provider: Provider, messages: { role: string; content: string }[], model: string): Record<string, unknown> {
   const base = { model, messages, max_tokens: 64 }
   switch (provider) {
-    case 'anthropic': return base
-    case 'openai': 
-    case 'xai': return base
+    case 'anthropic':
+    case 'openai':
+    case 'xai':
+    case 'groq': return base
     case 'gemini': return { contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })) }
+    default: return base
   }
 }
 

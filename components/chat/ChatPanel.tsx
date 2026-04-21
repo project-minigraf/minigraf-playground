@@ -120,7 +120,8 @@ function getAuthHeader(provider: string, apiKey: string): Record<string, string>
   switch (provider) {
     case 'anthropic': return { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' }
     case 'openai':
-    case 'xai': return { 'Authorization': `Bearer ${apiKey}` }
+    case 'xai':
+    case 'groq': return { 'Authorization': `Bearer ${apiKey}` }
     case 'gemini': return {}
     default: return {}
   }
@@ -129,9 +130,10 @@ function getAuthHeader(provider: string, apiKey: string): Record<string, string>
 function getProviderBody(provider: string, messages: { role: string; content: string }[], model: string): Record<string, unknown> {
   const base = { model, messages, max_tokens: 64 }
   switch (provider) {
-    case 'anthropic': return base
+    case 'anthropic':
     case 'openai':
-    case 'xai': return base
+    case 'xai':
+    case 'groq': return base
     case 'gemini': return { contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })) }
     default: return base
   }
@@ -157,12 +159,14 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
     try {
       const userKey = await getApiKey(provider as Provider)
 
-      // Can't call Anthropic directly from browser - need proxy, but proxy only has Groq fallback
+      // Can't call Anthropic directly from browser - need proxy
       // If no userKey for Anthropic, we can't proceed
       if (provider === 'anthropic' && !userKey) {
         throw new Error('No Anthropic API key found. Please add your key in Settings.')
       }
 
+      // Direct call if: has key AND provider is NOT anthropic (so direct calls work for groq/gemini/openai/xai with keys)
+      // For groq with no key, falls through to proxy for anonymous fallback
       const isDirectCall = userKey && provider !== 'anthropic'
 
       if (isDirectCall) {
