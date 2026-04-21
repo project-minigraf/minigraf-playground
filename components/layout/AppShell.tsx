@@ -6,6 +6,7 @@ import { QueryEditor } from '@/components/editor/QueryEditor'
 import { ResultsPanel } from '@/components/results/ResultsPanel'
 import { LessonSidebar } from '@/components/lessons/LessonSidebar'
 import { SettingsDrawer } from '@/components/settings/SettingsDrawer'
+import { ChatPanel } from '@/components/chat/ChatPanel'
 import { getSessionPrefs, setSessionPrefs } from '@/lib/storage'
 import type { QueryResult, SessionPrefs } from '@/lib/types'
 
@@ -25,12 +26,14 @@ export function AppShell() {
   const [editorValue, setEditorValue] = useState(DEFAULT_CODE)
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
   const [queryError, setQueryError] = useState<string | null>(null)
+  const [sessionPrefs, setSessionPrefsState] = useState<SessionPrefs | null>(null)
 
   useEffect(() => {
     getSessionPrefs().then((prefs) => {
       if (prefs?.mode) {
         setMode(prefs.mode)
       }
+      setSessionPrefsState(prefs)
     })
   }, [])
 
@@ -99,8 +102,14 @@ export function AppShell() {
         <ResizeHandle onResize={handleResize} />
 
         {/* Right panel - Chat */}
-        <div className="flex-1 flex items-center justify-center text-gray-500">
-          <p>Chat — coming in Task 3.3</p>
+        <div className="flex-1 overflow-hidden">
+          <ChatPanel
+            chatKey={mode === 'lessons' ? (activeLessonId ?? 'sandbox') : 'sandbox'}
+            provider={sessionPrefs?.provider ?? 'groq'}
+            model={sessionPrefs?.model ?? 'llama-3.3-70b-versatile'}
+            systemPrompt=""
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
         </div>
       </div>
 
