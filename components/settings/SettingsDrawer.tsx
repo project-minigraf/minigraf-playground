@@ -95,6 +95,10 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
     await clearApiKey(provider)
     setApiKeyState('')
     setTestStatus('idle')
+    // Reset to groq when clearing key - no key = no paid provider
+    setProvider('groq')
+    setModel(MODELS['groq'][0])
+    await setSessionPrefs({ provider: 'groq', model: MODELS['groq'][0], mode: undefined })
   }, [provider])
 
   const handleSave = useCallback(async () => {
