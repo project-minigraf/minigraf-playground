@@ -1,10 +1,12 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { NavBar } from './NavBar'
 import { ResizeHandle } from './ResizeHandle'
 import { QueryEditor } from '@/components/editor/QueryEditor'
 import { ResultsPanel } from '@/components/results/ResultsPanel'
-import type { QueryResult } from '@/lib/types'
+import { LessonSidebar } from '@/components/lessons/LessonSidebar'
+import { getSessionPrefs, setSessionPrefs } from '@/lib/storage'
+import type { QueryResult, SessionPrefs } from '@/lib/types'
 
 type Mode = 'sandbox' | 'lessons'
 
@@ -16,11 +18,20 @@ const DEFAULT_CODE = `(transact [[:alice :friend :bob]
 
 export function AppShell() {
   const [mode, setMode] = useState<Mode>('sandbox')
+  const [activeLessonId, setActiveLessonId] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [leftWidthPct, setLeftWidthPct] = useState(66)
   const [editorValue, setEditorValue] = useState(DEFAULT_CODE)
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
   const [queryError, setQueryError] = useState<string | null>(null)
+
+  useEffect(() => {
+    getSessionPrefs().then((prefs) => {
+      if (prefs?.mode) {
+        setMode(prefs.mode)
+      }
+    })
+  }, [])
 
   const handleResize = useCallback((deltaX: number) => {
     setLeftWidthPct((prev) => {
@@ -31,8 +42,10 @@ export function AppShell() {
     })
   }, [])
 
-  const handleModeChange = useCallback((m: Mode) => {
+  const handleModeChange = useCallback(async (m: Mode) => {
     setMode(m)
+    const prefs: SessionPrefs = { provider: 'gemini', model: '', mode: m }
+    await setSessionPrefs(prefs)
   }, [])
 
   const handleResult = useCallback((result: QueryResult) => {
@@ -53,10 +66,18 @@ export function AppShell() {
         onSettingsOpen={() => setSettingsOpen(true)}
       />
       <div className="flex-1 flex overflow-hidden">
+        {/* Lesson sidebar - lessons mode only */}
+        {mode === 'lessons' && (
+          <LessonSidebar 
+            activeLessonId={activeLessonId} 
+            onSelect={setActiveLessonId} 
+          />
+        )}
+
         {/* Left panel */}
         <div
           className="flex flex-col overflow-hidden"
-          style={{ width: `${leftWidthPct}%` }}
+          style={{ width: mode === 'lessons' ? '100%' : `${leftWidthPct}%` }}
         >
           {/* Editor */}
           <div className="flex-1 overflow-hidden">
@@ -78,7 +99,7 @@ export function AppShell() {
 
         {/* Right panel - Chat */}
         <div className="flex-1 flex items-center justify-center text-gray-500">
-          <p>Chat — coming in Task 2.4</p>
+          <p>Chat — coming in Task 3.3</p>
         </div>
       </div>
 
@@ -86,7 +107,7 @@ export function AppShell() {
       {settingsOpen && (
         <div className="fixed inset-y-0 right-0 w-80 bg-gray-900 border-l border-gray-800 p-4">
           <div className="text-gray-400">
-            Settings drawer — coming in Task 2.5
+            Settings drawer — coming in Task 3.1
           </div>
           <button
             onClick={() => setSettingsOpen(false)}
