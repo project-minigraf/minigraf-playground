@@ -55,9 +55,11 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
     setTestStatus('testing')
     try {
       // Call provider directly from browser - never send key to /api/chat
+      // Use a simple endpoint to verify the key works
       let res: Response
       switch (provider) {
         case 'anthropic':
+          // Anthropic requires full request - use a minimal one
           res = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
@@ -65,34 +67,33 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
               'anthropic-version': '2023-06-01',
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
+            body: JSON.stringify({ 
+              model: 'claude-haiku-5-2025-05-20', 
+              messages: [{ role: 'user', content: 'hi' }], 
+              max_tokens: 5 
+            }),
           })
           break
         case 'openai':
-          res = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
+          res = await fetch('https://api.openai.com/v1/models', {
+            method: 'GET',
             headers: {
               'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
           })
           break
         case 'gemini':
-          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-            method: 'POST',
+          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+            method: 'GET',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }], generationConfig: { maxOutputTokens: 1 } }),
           })
           break
         case 'xai':
-          res = await fetch('https://api.x.ai/v1/chat/completions', {
-            method: 'POST',
+          res = await fetch('https://api.x.ai/v1/models', {
+            method: 'GET',
             headers: {
               'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
           })
           break
         default:
@@ -102,7 +103,7 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
     } catch {
       setTestStatus('failed')
     }
-  }, [apiKey, provider, model])
+  }, [apiKey, provider])
 
   const handleClear = useCallback(async () => {
     await clearApiKey(provider)
