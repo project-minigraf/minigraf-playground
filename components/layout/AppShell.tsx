@@ -5,6 +5,7 @@ import { ResizeHandle } from './ResizeHandle'
 import { QueryEditor } from '@/components/editor/QueryEditor'
 import { ResultsPanel } from '@/components/results/ResultsPanel'
 import { LessonSidebar } from '@/components/lessons/LessonSidebar'
+import { SettingsDrawer } from '@/components/settings/SettingsDrawer'
 import { getSessionPrefs, setSessionPrefs } from '@/lib/storage'
 import type { QueryResult, SessionPrefs } from '@/lib/types'
 
@@ -103,19 +104,9 @@ export function AppShell() {
         </div>
       </div>
 
-      {/* Settings drawer placeholder */}
+      {/* Settings drawer */}
       {settingsOpen && (
-        <div className="fixed inset-y-0 right-0 w-80 bg-gray-900 border-l border-gray-800 p-4">
-          <div className="text-gray-400">
-            Settings drawer — coming in Task 3.1
-          </div>
-          <button
-            onClick={() => setSettingsOpen(false)}
-            className="mt-4 text-sm text-gray-500 hover:text-white"
-          >
-            Close
-          </button>
-        </div>
+        <SettingsDrawer onClose={() => setSettingsOpen(false)} />
       )}
     </div>
   )
