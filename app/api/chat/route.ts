@@ -38,7 +38,6 @@ export async function POST(req: NextRequest) {
   }
 
   const { messages, provider = 'groq', model = 'llama-3.3-70b-versatile', systemPrompt, test, userKey } = body
-  console.log('[proxy] provider:', provider, 'userKey:', userKey ? 'present' : 'null', 'isAnthropic:', provider === 'anthropic')
 
   // userKey is only accepted for Anthropic — all other providers must call their APIs directly from the browser
   if (userKey && provider !== 'anthropic') {

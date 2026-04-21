@@ -43,6 +43,7 @@ export function AppShell() {
   const [queryError, setQueryError] = useState<string | null>(null)
   const [lastQuery, setLastQuery] = useState<string>('')
   const [sessionPrefs, setSessionPrefsState] = useState<SessionPrefs | null>(null)
+  const [prefsLoaded, setPrefsLoaded] = useState(false)
 
   useEffect(() => {
     getSessionPrefs().then((prefs) => {
@@ -50,6 +51,7 @@ export function AppShell() {
         setMode(prefs.mode)
       }
       setSessionPrefsState(prefs)
+      setPrefsLoaded(true)
     })
   }, [])
 
@@ -156,6 +158,7 @@ export function AppShell() {
             model={sessionPrefs?.model ?? 'llama-3.3-70b-versatile'}
             systemPrompt={buildSystemPrompt({ lessonStepGoal, progress: lessonCompletedSteps })}
             introContext={mode === 'lessons' && activeLessonId ? LESSON_INTROS[activeLessonId] : undefined}
+            introEnabled={prefsLoaded}
             onOpenSettings={() => setSettingsOpen(true)}
             onRunQuery={status === 'ready' ? handleRunQueryFromChat : undefined}
           />

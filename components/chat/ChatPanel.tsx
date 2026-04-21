@@ -95,6 +95,7 @@ interface ChatPanelProps {
   model: string
   systemPrompt: string
   introContext?: { lessonTitle?: string; lessonGoals?: string }
+  introEnabled?: boolean
   onOpenSettings: () => void
   onRunQuery?: (code: string) => void
 }
@@ -139,7 +140,7 @@ function getProviderBody(provider: string, messages: { role: string; content: st
   }
 }
 
-export function ChatPanel({ chatKey, provider, model, systemPrompt, introContext, onOpenSettings, onRunQuery }: ChatPanelProps) {
+export function ChatPanel({ chatKey, provider, model, systemPrompt, introContext, introEnabled, onOpenSettings, onRunQuery }: ChatPanelProps) {
   const [showAnonBanner, setShowAnonBanner] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<StoredChatMessage[]>([])
@@ -158,7 +159,6 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
 
     try {
       const userKey = await getApiKey(provider as Provider)
-      console.log('[chat] provider:', provider, 'key:', userKey ? 'present' : 'null')
 
       // Can't call Anthropic directly from browser - need proxy
       // If no userKey for Anthropic, we can't proceed
@@ -169,7 +169,6 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
       // Direct call if: has key AND provider is NOT anthropic (so direct calls work for groq/gemini/openai/xai with keys)
       // For groq with no key, falls through to proxy for anonymous fallback
       const isDirectCall = userKey && provider !== 'anthropic'
-      console.log('[chat] isDirectCall:', isDirectCall)
 
       if (isDirectCall) {
         const url = getProviderUrl(provider, model, userKey)
@@ -210,7 +209,6 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
         const proxyBody = userKey
           ? { messages: allMessages, provider, model, userKey }
           : { messages: allMessages }
-        console.log('[chat] proxy call:', { provider, hasKey: !!userKey, bodyKeys: Object.keys(proxyBody) })
 
         const res = await fetch('/api/chat', {
           method: 'POST',
@@ -273,7 +271,7 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
   useEffect(() => {
     getChatHistory(chatKey).then((history) => {
       setMessages(history)
-      if (history.length === 0 && !introFiredRef.current.has(chatKey)) {
+      if (history.length === 0 && !introFiredRef.current.has(chatKey) && introEnabled) {
         introFiredRef.current.add(chatKey)
         const prompt = buildIntroPrompt(introContext)
         const introMsgs: LLMMessage[] = [
@@ -283,7 +281,7 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
         callLLMRef.current(introMsgs)
       }
     })
-  }, [chatKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [chatKey, introEnabled]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (messages.length > 0) {
