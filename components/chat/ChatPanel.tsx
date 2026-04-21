@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
@@ -76,6 +76,15 @@ function createCodeRenderer(onRunQuery?: (code: string) => void) {
     )
   }
 }
+
+function buildIntroPrompt(introContext?: { lessonTitle?: string; lessonGoals?: string }): string {
+  if (introContext?.lessonTitle) {
+    const goalsLine = introContext.lessonGoals ? ` It covers: ${introContext.lessonGoals}.` : ''
+    return `The user is starting the lesson "${introContext.lessonTitle}".${goalsLine} In 2-3 sentences, introduce yourself, describe what they will learn, and invite them to begin.`
+  }
+  return 'In 2-3 sentences, introduce yourself as a friendly Minigraf tutor. Briefly mention that Minigraf supports Datalog querying and bi-temporal time travel, and invite the user to ask questions or start experimenting.'
+}
+
 import { AnonCapBanner } from './AnonCapBanner'
 import { getChatHistory, setChatHistory, clearChatHistory, getApiKey } from '@/lib/storage'
 import type { ChatMessage as StoredChatMessage, Provider } from '@/lib/types'
@@ -85,6 +94,7 @@ interface ChatPanelProps {
   provider: string
   model: string
   systemPrompt: string
+  introContext?: { lessonTitle?: string; lessonGoals?: string }
   onOpenSettings: () => void
   onRunQuery?: (code: string) => void
 }
@@ -127,52 +137,35 @@ function getProviderBody(provider: string, messages: { role: string; content: st
   }
 }
 
-export function ChatPanel({ chatKey, provider, model, systemPrompt, onOpenSettings, onRunQuery }: ChatPanelProps) {
+export function ChatPanel({ chatKey, provider, model, systemPrompt, introContext, onOpenSettings, onRunQuery }: ChatPanelProps) {
   const [showAnonBanner, setShowAnonBanner] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<StoredChatMessage[]>([])
   const [loading, setLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const introFiredRef = useRef<Set<string>>(new Set())
 
   const codeRenderer = useMemo(() => createCodeRenderer(onRunQuery), [onRunQuery])
 
-  useEffect(() => {
-    getChatHistory(chatKey).then(setMessages)
-  }, [chatKey])
+  type LLMMessage = { role: 'user' | 'assistant' | 'system'; content: string }
 
-  useEffect(() => {
-    if (messages.length > 0) {
-      setChatHistory(chatKey, messages)
-    }
-  }, [chatKey, messages])
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
-  }, [messages])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!input.trim() || loading) return
-
-    const userInput = input.trim()
-    setInput('')
+  const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
     setLoading(true)
-
     abortRef.current = new AbortController()
 
-    const userMsg: StoredChatMessage = { role: 'user', content: userInput, timestamp: Date.now() }
-    setMessages((prev) => [...prev, userMsg])
-
-    const allMessages = systemPrompt
-      ? [{ role: 'system' as const, content: systemPrompt }, ...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user' as const, content: userInput }]
-      : [...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user' as const, content: userInput }]
-
-    try {
+try {
       const userKey = await getApiKey(provider as Provider)
+      console.log('[chat] provider:', provider, 'key:', userKey ? 'present' : 'null')
+
+      // Can't call Anthropic directly from browser - need proxy, but proxy only has Groq fallback
+      // If no userKey for Anthropic, we can't proceed
+      if (provider === 'anthropic' && !userKey) {
+        throw new Error('No Anthropic API key found. Please add your key in Settings.')
+      }
+
       const isDirectCall = userKey && provider !== 'anthropic'
+      console.log('[chat] isDirectCall:', isDirectCall, 'anthropic:', provider === 'anthropic')
 
       if (isDirectCall) {
         const url = getProviderUrl(provider, model, userKey)
@@ -266,6 +259,54 @@ export function ChatPanel({ chatKey, provider, model, systemPrompt, onOpenSettin
     } finally {
       setLoading(false)
     }
+  }, [provider, model, setShowAnonBanner])
+
+  // Keep a ref so the history-load effect can call the latest callLLM without a dep
+  const callLLMRef = useRef(callLLM)
+  useEffect(() => { callLLMRef.current = callLLM }, [callLLM])
+
+  useEffect(() => {
+    getChatHistory(chatKey).then((history) => {
+      setMessages(history)
+      if (history.length === 0 && !introFiredRef.current.has(chatKey)) {
+        introFiredRef.current.add(chatKey)
+        const prompt = buildIntroPrompt(introContext)
+        const introMsgs: LLMMessage[] = [
+          ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+          { role: 'user' as const, content: prompt },
+        ]
+        callLLMRef.current(introMsgs)
+      }
+    })
+  }, [chatKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      setChatHistory(chatKey, messages)
+    }
+  }, [chatKey, messages])
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [messages])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!input.trim() || loading) return
+
+    const userInput = input.trim()
+    setInput('')
+
+    const userMsg: StoredChatMessage = { role: 'user', content: userInput, timestamp: Date.now() }
+    setMessages((prev) => [...prev, userMsg])
+
+    const allMessages: LLMMessage[] = systemPrompt
+      ? [{ role: 'system', content: systemPrompt }, ...messages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })), { role: 'user', content: userInput }]
+      : [...messages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })), { role: 'user', content: userInput }]
+
+    await callLLM(allMessages)
   }
 
   const handleClear = async () => {
@@ -315,7 +356,7 @@ export function ChatPanel({ chatKey, provider, model, systemPrompt, onOpenSettin
             </div>
           </div>
         ))}
-        {loading && messages.length > 0 && messages[messages.length - 1].role !== 'assistant' && (
+        {loading && (messages.length === 0 || messages[messages.length - 1].role !== 'assistant') && (
           <div className="flex justify-start">
             <div className="bg-gray-800 rounded-lg px-3 py-2 text-gray-400 text-sm">
               <span className="animate-pulse">⋯</span>
@@ -335,13 +376,23 @@ export function ChatPanel({ chatKey, provider, model, systemPrompt, onOpenSettin
             className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
             disabled={loading}
           />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded text-white text-sm font-medium transition-colors"
-          >
-            {loading ? '⋯' : 'Send'}
-          </button>
+          {loading ? (
+            <button
+              type="button"
+              onClick={handleStop}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm font-medium transition-colors"
+            >
+              Stop
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!input.trim()}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded text-white text-sm font-medium transition-colors"
+            >
+              Send
+            </button>
+          )}
         </div>
       </form>
     </div>

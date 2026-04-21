@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useState, useEffect, useLayoutEffect } from 'react'
+import { useCallback, useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { datalogLanguage } from './datalog-lang'
 import { useMinigraf } from '@/hooks/useMinigraf'
@@ -15,11 +15,6 @@ interface QueryEditorProps {
 export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorProps) {
   const { status, error: wasmError, query } = useMinigraf()
   const [queryError, setQueryError] = useState<string | null>(null)
-  const [mounted, setMounted] = useState(false)
-
-  useLayoutEffect(() => {
-    setMounted(true)
-  }, [])
 
   const handleRun = useCallback(async () => {
     setQueryError(null)
@@ -41,7 +36,6 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
   const displayError = queryError || wasmError
 
   const isReady = status === 'ready'
-  const canRun = mounted && isReady
   const statusText = status === 'loading' ? 'Loading...' : status === 'ready' ? 'Ready' : status === 'error' ? 'Error' : ''
 
   return (
@@ -71,7 +65,7 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
         </span>
         <button
           onClick={handleRun}
-          disabled={canRun === false}
+          disabled={!isReady}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded transition-colors"
         >
           <span>▶</span> Run
