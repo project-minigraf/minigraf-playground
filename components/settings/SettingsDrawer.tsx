@@ -26,22 +26,25 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
   const [model, setModel] = useState('')
   const [apiKey, setApiKeyState] = useState('')
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle')
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
+    if (loaded) return
     getSessionPrefs().then((prefs) => {
-      if (prefs?.provider) {
-        setProvider(prefs.provider)
-        setModel(prefs.model || MODELS[prefs.provider][0])
-      }
-    })
-    getApiKey(provider).then((key) => {
+      const p = prefs?.provider || 'gemini'
+      setProvider(p)
+      setModel(prefs?.model || MODELS[p][0])
+      return getApiKey(p)
+    }).then((key) => {
       setApiKeyState(key || '')
+      setLoaded(true)
     })
-  }, [provider])
+  }, [])
 
   const handleProviderChange = useCallback((p: Provider) => {
     setProvider(p)
     setModel(MODELS[p][0])
+    setTestStatus('idle')
     getApiKey(p).then((key) => {
       setApiKeyState(key || '')
     })
