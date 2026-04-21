@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { datalogLanguage } from './datalog-lang'
 import { useMinigraf } from '@/hooks/useMinigraf'
@@ -15,6 +15,7 @@ interface QueryEditorProps {
 export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorProps) {
   const { status, error: wasmError, query } = useMinigraf()
   const [queryError, setQueryError] = useState<string | null>(null)
+  const [hydrated, setHydrated] = useState(false)
 
   const handleRun = useCallback(async () => {
     setQueryError(null)
@@ -36,7 +37,7 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
   const displayError = queryError || wasmError
 
   const isReady = status === 'ready'
-  const canRun = status === 'ready' ? true : false
+  const canRun = hydrated && isReady
   const statusText = status === 'loading' ? 'Loading...' : status === 'ready' ? 'Ready' : status === 'error' ? 'Error' : ''
 
   return (
