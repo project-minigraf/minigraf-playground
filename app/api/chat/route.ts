@@ -1,4 +1,5 @@
 import { streamText } from 'ai'
+import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGroq } from '@ai-sdk/groq'
 import { SignJWT, jwtVerify } from 'jose'
 import { NextRequest } from 'next/server'
@@ -33,19 +34,39 @@ export async function POST(req: NextRequest) {
     model?: string
     systemPrompt?: string
     test?: boolean
+    userKey?: string  // Only accepted when provider === 'anthropic' (CORS prevents direct browser calls)
   }
 
-  // Belt and suspenders: reject any request trying to proxy a user key
-  if ('userKey' in body) {
+  const { messages, provider = 'groq', model = 'llama-3.3-70b-versatile', systemPrompt, test, userKey } = body
+
+  // userKey is only accepted for Anthropic — all other providers must call their APIs directly from the browser
+  if (userKey && provider !== 'anthropic') {
     return new Response(
-      JSON.stringify({ error: 'invalid_request', message: 'userKey must not be sent to this endpoint. Call the provider directly from the browser.' }),
+      JSON.stringify({ error: 'invalid_request', message: 'userKey may only be proxied for Anthropic. Call other providers directly from the browser.' }),
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     )
   }
 
-  const { messages, provider = 'groq', model = 'llama-3.3-70b-versatile', systemPrompt, test } = body
+  const isAnthropicByok = provider === 'anthropic' && !!userKey
 
-  // Check token cap for anonymous usage
+  // Anthropic BYOK: proxy the request server-side (Anthropic's API does not support browser CORS)
+  if (isAnthropicByok) {
+    if (test) {
+      // Verify key server-side — browser cannot call Anthropic directly
+      const check = await fetch('https://api.anthropic.com/v1/models', {
+        headers: { 'x-api-key': userKey, 'anthropic-version': '2023-06-01' },
+      })
+      return new Response(null, { status: check.ok ? 200 : check.status })
+    }
+    const allMessages = systemPrompt
+      ? [{ role: 'system' as const, content: systemPrompt }, ...(messages ?? [])]
+      : messages ?? []
+    const llm = createAnthropic({ apiKey: userKey })(model)
+    const result = await streamText({ model: llm, messages: allMessages })
+    return result.toTextStreamResponse()
+  }
+
+  // Groq anonymous fallback — enforce token cap
   const used = await getUsedTokens(req)
   if (used >= TOKEN_CAP) {
     return new Response(
@@ -53,8 +74,6 @@ export async function POST(req: NextRequest) {
       { status: 429, headers: { 'Content-Type': 'application/json' } }
     )
   }
-
-  const llm = createGroq({ apiKey: process.env.GROQ_API_KEY ?? '' })(model)
 
   if (test) {
     return new Response('ok', { headers: { 'Content-Type': 'text/plain' } })
@@ -64,10 +83,10 @@ export async function POST(req: NextRequest) {
     ? [{ role: 'system' as const, content: systemPrompt }, ...(messages ?? [])]
     : messages ?? []
 
+  const llm = createGroq({ apiKey: process.env.GROQ_API_KEY ?? '' })(model)
   const result = await streamText({ model: llm, messages: allMessages })
   const response = result.toTextStreamResponse()
 
-  // Track token usage
   const approxTokens = JSON.stringify(messages).length / 4
   response.headers.set('Set-Cookie', await makeTokenCookie(used + approxTokens))
 

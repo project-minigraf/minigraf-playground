@@ -49,8 +49,9 @@ export function useChat() {
     abortRef.current = new AbortController()
 
     try {
-      if (apiKey) {
-        // BYOK path: call provider directly from browser
+      if (apiKey && provider !== 'anthropic') {
+        // BYOK path: call provider directly from browser (non-Anthropic only)
+        // Anthropic does not support browser CORS; it is proxied below instead
         const allMessages = systemPrompt
           ? [{ role: 'system', content: systemPrompt }, ...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user', content }]
           : [...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user', content }]
@@ -72,13 +73,8 @@ export function useChat() {
 
         const data = await res.json() as Record<string, unknown>
         let text = ''
-        
-        if (provider === 'anthropic') {
-          const content = data.content as unknown[] | undefined
-          text = content?.[0] && typeof content[0] === 'object' 
-            ? (content[0] as Record<string, unknown>).text as string 
-            : ''
-        } else if (provider === 'gemini') {
+
+        if (provider === 'gemini') {
           const candidates = data.candidates as unknown[] | undefined
           const firstCandidate = candidates?.[0] as Record<string, unknown> | undefined
           const candidateContent = firstCandidate?.content as Record<string, unknown> | undefined
@@ -94,15 +90,19 @@ export function useChat() {
         const assistantMsg: ChatMessage = { role: 'assistant', content: text, timestamp: Date.now() }
         setMessages((prev) => [...prev, assistantMsg])
       } else {
-        // Fallback: call /api/chat (Groq)
+        // Proxy path: Anthropic BYOK (relayed server-side) OR anonymous Groq fallback
         const allMessages = systemPrompt
           ? [{ role: 'system' as const, content: systemPrompt }, ...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user' as const, content }]
           : [...messages.map(m => ({ role: m.role, content: m.content })), { role: 'user' as const, content }]
 
+        const proxyBody = apiKey
+          ? { messages: allMessages, provider, model, userKey: apiKey }
+          : { messages: allMessages }
+
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: allMessages }),
+          body: JSON.stringify(proxyBody),
           signal: abortRef.current.signal,
         })
 
@@ -117,7 +117,6 @@ export function useChat() {
         let assistantContent = ''
         const decoder = new TextDecoder()
 
-        // Create assistant message placeholder
         const assistantMsg: ChatMessage = { role: 'assistant', content: '', timestamp: Date.now() }
         setMessages((prev) => [...prev, assistantMsg])
 
@@ -126,7 +125,6 @@ export function useChat() {
           if (done) break
           const chunk = decoder.decode(value)
           assistantContent += chunk
-          // Update the last message incrementally
           setMessages((prev) => {
             const updated = [...prev]
             updated[updated.length - 1] = { ...assistantMsg, content: assistantContent }

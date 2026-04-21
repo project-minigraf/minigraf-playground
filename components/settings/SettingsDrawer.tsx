@@ -57,12 +57,11 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
       let res: Response
       switch (provider) {
         case 'anthropic':
-          // CORS preflight for Anthropic may fail from non-HTTPS origins (returns 400, no allow-origin)
-          // Real network call attempted; TypeError catch below handles CORS block
-          res = await fetch('https://api.anthropic.com/v1/messages', {
+          // Anthropic's API does not support browser CORS; verify key via server-side proxy
+          res = await fetch('/api/chat', {
             method: 'POST',
-            headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: 'claude-haiku-4-5', messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ test: true, provider: 'anthropic', userKey: apiKey }),
           })
           break
         case 'openai':
@@ -112,7 +111,10 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
       </div>
 
       <div className="mb-4 p-3 bg-blue-900/30 border border-blue-800 rounded text-blue-200 text-sm">
-        Your API key is stored only in this browser and sent directly to {PROVIDERS.find(p => p.id === provider)?.name} to authenticate your requests. It never touches Minigraf's servers.
+        {provider === 'anthropic'
+          ? 'Your API key is stored only in this browser. Because Anthropic\'s API does not support direct browser access, it is relayed through our server to reach Anthropic. It is never logged or stored server-side.'
+          : `Your API key is stored only in this browser and sent directly to ${PROVIDERS.find(p => p.id === provider)?.name} to authenticate your requests. It never touches Minigraf's servers.`
+        }
       </div>
 
       <div className="space-y-4">
@@ -172,7 +174,7 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
 
         {testStatus === 'success' && <div className="text-green-400 text-sm">✓ Connected</div>}
         {testStatus === 'failed' && <div className="text-red-400 text-sm">✗ Key rejected by provider</div>}
-        {testStatus === 'unreachable' && <div className="text-amber-300 text-sm">⚠ Cannot reach provider from this origin — key format looks valid; test on a deployed HTTPS origin</div>}
+        {testStatus === 'unreachable' && <div className="text-amber-300 text-sm">⚠ Could not reach provider — check your network connection</div>}
 
         <button
           onClick={handleSave}
