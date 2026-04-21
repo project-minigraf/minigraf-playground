@@ -2,7 +2,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { NavBar } from './NavBar'
 import { ResizeHandle } from './ResizeHandle'
-import { QueryEditor } from '@/components/editor/QueryEditor'
+import dynamic from 'next/dynamic'
+const QueryEditor = dynamic(
+  () => import('@/components/editor/QueryEditor').then((m) => ({ default: m.QueryEditor })),
+  { ssr: false }
+)
 import { ResultsPanel } from '@/components/results/ResultsPanel'
 import { LessonSidebar } from '@/components/lessons/LessonSidebar'
 import { SettingsDrawer } from '@/components/settings/SettingsDrawer'
@@ -14,6 +18,13 @@ import type { QueryResult, SessionPrefs } from '@/lib/types'
 
 type Mode = 'sandbox' | 'lessons'
 
+const LESSON_INTROS: Record<string, { lessonTitle: string; lessonGoals: string }> = {
+  'lesson-1': { lessonTitle: 'Basic Facts and Queries', lessonGoals: 'asserting and retracting facts, running basic Datalog queries, and reading query results' },
+  'lesson-2': { lessonTitle: 'Rules and Inference', lessonGoals: 'defining rules to derive new facts, and using recursive rules for graph traversal' },
+  'lesson-3': { lessonTitle: 'Recursive Rules', lessonGoals: 'writing fixed-point recursive rules and understanding semi-naive evaluation' },
+  'lesson-4': { lessonTitle: 'Bi-temporal Time Travel', lessonGoals: 'valid-time and transaction-time axes, backdating facts, and querying historical snapshots' },
+}
+
 const DEFAULT_CODE = `(transact [[:alice :friend :bob]
            [:bob :friend :charlie]])
 
@@ -23,6 +34,8 @@ const DEFAULT_CODE = `(transact [[:alice :friend :bob]
 export function AppShell() {
   const [mode, setMode] = useState<Mode>('sandbox')
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null)
+  const [lessonStepGoal, setLessonStepGoal] = useState<string | null>(null)
+  const [lessonCompletedSteps, setLessonCompletedSteps] = useState<string[]>([])
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [leftWidthPct, setLeftWidthPct] = useState(66)
   const [editorValue, setEditorValue] = useState(DEFAULT_CODE)
@@ -51,8 +64,18 @@ export function AppShell() {
 
   const handleModeChange = useCallback(async (m: Mode) => {
     setMode(m)
+    if (m !== 'lessons') {
+      setLessonStepGoal(null)
+      setLessonCompletedSteps([])
+    }
     const prefs: SessionPrefs = { provider: 'gemini', model: '', mode: m }
     await setSessionPrefs(prefs)
+  }, [])
+
+  const handleActiveLessonChange = useCallback((id: string) => {
+    setActiveLessonId(id)
+    setLessonStepGoal(null)
+    setLessonCompletedSteps([])
   }, [])
 
   const handleResult = useCallback((result: QueryResult, queryCode?: string) => {
@@ -86,9 +109,9 @@ export function AppShell() {
       <div className="flex-1 flex overflow-hidden">
         {/* Lesson sidebar - lessons mode only */}
         {mode === 'lessons' && (
-          <LessonSidebar 
-            activeLessonId={activeLessonId} 
-            onSelect={setActiveLessonId} 
+          <LessonSidebar
+            activeLessonId={activeLessonId}
+            onSelect={handleActiveLessonChange}
           />
         )}
 
@@ -119,9 +142,10 @@ export function AppShell() {
         <div className="flex-1 overflow-hidden">
           <ChatPanel
             chatKey={mode === 'lessons' ? (activeLessonId ?? 'sandbox') : 'sandbox'}
-            provider={sessionPrefs?.provider ?? 'groq'}
-            model={sessionPrefs?.model ?? 'llama-3.3-70b-versatile'}
-            systemPrompt={buildSystemPrompt({ lessonStepGoal: null, progress: [] })}
+            provider={sessionPrefs?.provider ?? 'gemini'}
+            model={sessionPrefs?.model ?? 'gemini-2.5-flash'}
+            systemPrompt={buildSystemPrompt({ lessonStepGoal, progress: lessonCompletedSteps })}
+            introContext={mode === 'lessons' && activeLessonId ? LESSON_INTROS[activeLessonId] : undefined}
             onOpenSettings={() => setSettingsOpen(true)}
             onRunQuery={status === 'ready' ? handleRunQueryFromChat : undefined}
           />
