@@ -276,6 +276,8 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
 
   useEffect(() => {
     introFiredRef.current.delete(chatKey)
+    setMessages([])
+    clearChatHistory(chatKey)
   }, [chatKey])
 
   useEffect(() => {
