@@ -41,8 +41,8 @@ export function LessonSidebar({ activeLessonId, completedStepsPerLesson, current
     <div className="w-52 border-r border-gray-800 flex flex-col shrink-0">
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
         <span className="text-xs uppercase tracking-widest text-gray-500">Lessons</span>
-        {activeLessonId && totalSteps > 0 && (
-          <span className="text-xs text-blue-400">Step {currentStepIndex + 1}/{totalSteps}</span>
+        {activeLessonId && (
+          <span className="text-xs text-blue-400">Step {currentStepIndex + 1}/{totalSteps || '?'}</span>
         )}
         <button onClick={() => setCollapsed(true)} className="text-gray-600 hover:text-white text-xs">◀</button>
       </div>

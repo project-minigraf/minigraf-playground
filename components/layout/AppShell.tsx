@@ -94,12 +94,19 @@ export function AppShell() {
 
   const { status, error: wasmError, query } = useMinigraf()
   const lessonRunner = useLesson(mode === 'lessons' ? activeLessonId : null)
+  const [lessonReady, setLessonReady] = useState(false)
 
   useEffect(() => {
     if (lessonRunner.starterCode) {
       setEditorValue(lessonRunner.starterCode)
     }
   }, [lessonRunner.starterCode])
+
+  useEffect(() => {
+    if (lessonRunner.lesson && lessonRunner.totalSteps > 0) {
+      setLessonReady(true)
+    }
+  }, [lessonRunner.lesson, lessonRunner.totalSteps])
 
   useEffect(() => {
     if (activeLessonId) {
@@ -184,8 +191,11 @@ export function AppShell() {
               lessonStepGoal: lessonRunner.currentStep?.instruction ?? lessonStepGoal, 
               progress: lessonCompletedSteps 
             })}
-            introContext={mode === 'lessons' && activeLessonId ? LESSON_INTROS[activeLessonId] : undefined}
-            introEnabled={prefsLoaded}
+            introContext={mode === 'lessons' && activeLessonId ? {
+              ...LESSON_INTROS[activeLessonId],
+              currentStep: lessonRunner.currentStep?.instruction ?? undefined,
+            } : undefined}
+            introEnabled={prefsLoaded && (mode !== 'lessons' ? true : lessonReady)}
             onOpenSettings={() => setSettingsOpen(true)}
             onRunQuery={status === 'ready' ? handleRunQueryFromChat : undefined}
           />

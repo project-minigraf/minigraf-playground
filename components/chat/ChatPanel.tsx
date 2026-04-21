@@ -77,10 +77,11 @@ function createCodeRenderer(onRunQuery?: (code: string) => void) {
   }
 }
 
-function buildIntroPrompt(introContext?: { lessonTitle?: string; lessonGoals?: string }): string {
+function buildIntroPrompt(introContext?: { lessonTitle?: string; lessonGoals?: string; currentStep?: string }): string {
   if (introContext?.lessonTitle) {
     const goalsLine = introContext.lessonGoals ? ` It covers: ${introContext.lessonGoals}.` : ''
-    return `The user is starting the lesson "${introContext.lessonTitle}".${goalsLine} In 2-3 sentences, introduce yourself, describe what they will learn, and invite them to begin.`
+    const stepLine = introContext.currentStep ? `\n\nThe user's current task is:\n${introContext.currentStep}` : ''
+    return `The user is starting the lesson "${introContext.lessonTitle}".${goalsLine}${stepLine}\n\nIn 2-3 sentences, introduce yourself, describe what they will learn, and guide them through the current task.`
   }
   return 'In 2-3 sentences, introduce yourself as a friendly Minigraf tutor. Briefly mention that Minigraf supports Datalog querying and bi-temporal time travel, and invite the user to ask questions or start experimenting.'
 }
@@ -94,7 +95,7 @@ interface ChatPanelProps {
   provider: string
   model: string
   systemPrompt: string
-  introContext?: { lessonTitle?: string; lessonGoals?: string }
+  introContext?: { lessonTitle?: string; lessonGoals?: string; currentStep?: string }
   introEnabled?: boolean
   onOpenSettings: () => void
   onRunQuery?: (code: string) => void
