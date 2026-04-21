@@ -22,13 +22,19 @@ export function PrivacyModal() {
       <div className="max-w-md w-full bg-gray-900 rounded-xl p-6 space-y-4 text-sm text-gray-300">
         <h2 className="text-lg font-semibold text-white">Before you start</h2>
         <p>
-          <strong className="text-white">Your API keys stay in your browser.</strong>{' '}
-          They are stored in IndexedDB and are never sent to our servers.
+          <strong className="text-white">Your API keys are stored only in this browser</strong>{' '}
+          (IndexedDB) and are never stored on our servers.
         </p>
         <p>
-          When you use AI features, your queries and chat messages are sent to the
-          third-party LLM provider you choose (e.g. Anthropic, OpenAI, Google, xAI,
-          or Groq). Each provider processes this data under their own privacy policy.
+          When you use AI features, your key and messages are sent to the LLM provider
+          you choose. For most providers (OpenAI, Google, xAI, Groq) this happens
+          directly from your browser. <strong className="text-white">Anthropic is the
+          exception:</strong> because their API does not support direct browser access,
+          your key and messages are relayed through our server in transit — they are
+          never logged or stored server-side.
+        </p>
+        <p>
+          Each provider processes your data under their own privacy policy.
         </p>
         <p>
           By continuing you acknowledge this. Read our{' '}
