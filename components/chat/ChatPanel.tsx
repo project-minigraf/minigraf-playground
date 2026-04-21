@@ -363,7 +363,11 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
                   </ReactMarkdown>
                 </div>
               ) : (
-                <p className="text-white text-sm whitespace-pre-wrap">{m.content}</p>
+                <div className="text-white text-sm whitespace-pre-wrap">
+                  <ReactMarkdown components={{ code: codeRenderer }}>
+                    {m.content}
+                  </ReactMarkdown>
+                </div>
               )}
             </div>
           </div>

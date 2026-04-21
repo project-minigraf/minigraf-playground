@@ -31,7 +31,9 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
 
   const runKeymap = keymap.of([{
     key: 'Ctrl-Enter',
-    mac: 'Cmd-Enter',
+    run: () => { handleRun(); return true },
+  }, {
+    key: 'Cmd-Enter',
     run: () => { handleRun(); return true },
   }])
 
