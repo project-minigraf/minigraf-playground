@@ -158,6 +158,7 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
 
     try {
       const userKey = await getApiKey(provider as Provider)
+      console.log('[chat] provider:', provider, 'key:', userKey ? 'present' : 'null')
 
       // Can't call Anthropic directly from browser - need proxy
       // If no userKey for Anthropic, we can't proceed
@@ -168,6 +169,7 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
       // Direct call if: has key AND provider is NOT anthropic (so direct calls work for groq/gemini/openai/xai with keys)
       // For groq with no key, falls through to proxy for anonymous fallback
       const isDirectCall = userKey && provider !== 'anthropic'
+      console.log('[chat] isDirectCall:', isDirectCall)
 
       if (isDirectCall) {
         const url = getProviderUrl(provider, model, userKey)
@@ -208,6 +210,7 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
         const proxyBody = userKey
           ? { messages: allMessages, provider, model, userKey }
           : { messages: allMessages }
+        console.log('[chat] proxy call:', { provider, hasKey: !!userKey, bodyKeys: Object.keys(proxyBody) })
 
         const res = await fetch('/api/chat', {
           method: 'POST',
