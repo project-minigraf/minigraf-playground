@@ -225,7 +225,7 @@ export function ChatPanel({ chatKey, provider, model, systemPrompt, onOpenSettin
           <div key={i} className={`flex ${roleToAlignment(m.role)}`}>
             <div className={`max-w-[85%] rounded-lg px-3 py-2 ${roleToBg(m.role)}`}>
               {m.role === 'assistant' ? (
-                <div className="prose prose-invert prose-sm">
+                <div className="prose prose-invert prose-sm text-gray-100">
                   <ReactMarkdown>{m.content}</ReactMarkdown>
                 </div>
               ) : (
