@@ -150,11 +150,11 @@ export function ChatPanel({ chatKey, provider, model, systemPrompt, introContext
 
   type LLMMessage = { role: 'user' | 'assistant' | 'system'; content: string }
 
-  const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
+const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
     setLoading(true)
     abortRef.current = new AbortController()
 
-try {
+    try {
       const userKey = await getApiKey(provider as Provider)
       console.log('[chat] provider:', provider, 'key:', userKey ? 'present' : 'null')
 
