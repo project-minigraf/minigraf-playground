@@ -142,8 +142,8 @@ export function AppShell() {
         <div className="flex-1 overflow-hidden">
           <ChatPanel
             chatKey={mode === 'lessons' ? (activeLessonId ?? 'sandbox') : 'sandbox'}
-            provider={sessionPrefs?.provider ?? 'gemini'}
-            model={sessionPrefs?.model ?? 'gemini-2.5-flash'}
+            provider={sessionPrefs?.provider ?? 'anthropic'}
+            model={sessionPrefs?.model ?? 'claude-haiku-4-5'}
             systemPrompt={buildSystemPrompt({ lessonStepGoal, progress: lessonCompletedSteps })}
             introContext={mode === 'lessons' && activeLessonId ? LESSON_INTROS[activeLessonId] : undefined}
             onOpenSettings={() => setSettingsOpen(true)}

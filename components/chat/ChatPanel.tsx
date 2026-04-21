@@ -156,7 +156,7 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
 
     try {
       const userKey = await getApiKey(provider as Provider)
-      console.log('[chat] provider:', provider, 'key:', userKey ? 'present' : 'null')
+      console.log('[chat] callLLM: provider=', provider, 'model=', model, 'key=', userKey ? 'present' : 'null')
 
       // Can't call Anthropic directly from browser - need proxy, but proxy only has Groq fallback
       // If no userKey for Anthropic, we can't proceed
