@@ -1,7 +1,7 @@
 'use client'
-import { useCallback, useState, useEffect } from 'react'
+import { useCallback, useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
-import { EditorView, keymap } from '@codemirror/view'
+import { keymap, type KeyBinding } from '@codemirror/view'
 import { datalogLanguage } from './datalog-lang'
 import { useMinigraf } from '@/hooks/useMinigraf'
 import type { QueryResult } from '@/lib/types'
@@ -29,13 +29,10 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
     }
   }, [value, query, onResult, onError])
 
-  const runKeymap = keymap.of([{
-    key: 'Ctrl-Enter',
-    run: () => { handleRun(); return true },
-  }, {
-    key: 'Cmd-Enter',
-    run: () => { handleRun(); return true },
-  }])
+  const runKeymap: KeyBinding[] = [
+    { key: 'Ctrl-Enter', run: () => { handleRun(); return true } },
+    { key: 'Cmd-Enter', mac: 'Cmd-Enter', run: () => { handleRun(); return true } },
+  ]
 
   const handleChange = useCallback((val: string) => {
     setQueryError(null)
@@ -53,7 +50,7 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
         <CodeMirror
           value={value}
           onChange={handleChange}
-          extensions={[datalogLanguage, runKeymap]}
+          extensions={[datalogLanguage, keymap.of(runKeymap)]}
           theme="dark"
           className="h-full text-sm"
           basicSetup={{
