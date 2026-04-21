@@ -51,6 +51,9 @@ export function AppShell() {
     getSessionPrefs().then((prefs) => {
       if (prefs?.mode) {
         setMode(prefs.mode)
+        if (prefs.mode === 'lessons' && prefs.activeLessonId) {
+          setActiveLessonId(prefs.activeLessonId)
+        }
       }
       setSessionPrefsState(prefs)
       setPrefsLoaded(true)
@@ -78,19 +81,24 @@ export function AppShell() {
 
   const handleModeChange = useCallback(async (m: Mode) => {
     setMode(m)
+    if (m === 'lessons' && !activeLessonId) {
+      setActiveLessonId('lesson-1')
+    }
     if (m !== 'lessons') {
       setLessonStepGoal(null)
       setLessonCompletedSteps([])
     }
     const prefs: SessionPrefs = { provider: 'gemini', model: '', mode: m }
     await setSessionPrefs(prefs)
-  }, [])
+  }, [activeLessonId])
 
-  const handleActiveLessonChange = useCallback((id: string) => {
+  const handleActiveLessonChange = useCallback(async (id: string) => {
     setActiveLessonId(id)
     setLessonStepGoal(null)
     setLessonCompletedSteps([])
-  }, [])
+    const prefs: SessionPrefs = { provider: sessionPrefs?.provider ?? 'groq', model: sessionPrefs?.model ?? '', mode, activeLessonId: id }
+    await setSessionPrefs(prefs)
+  }, [sessionPrefs, mode])
 
   const { status, error: wasmError, query } = useMinigraf()
   const lessonRunner = useLesson(mode === 'lessons' ? activeLessonId : null)

@@ -10,6 +10,7 @@ export type SessionPrefs = {
   provider: Provider
   model: string
   mode?: 'sandbox' | 'lessons'
+  activeLessonId?: string
 }
 
 export type ChatMessage = {
