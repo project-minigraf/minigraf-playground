@@ -295,11 +295,20 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
     }
   }, [messages])
 
+  const formatInput = (text: string): string => {
+    let formatted = text
+    formatted = formatted.replace(/```([\s\S]*?)```/g, (_match, code: string) => {
+      return code.includes('\n') ? `\`\`\`datalog\n${code}\`\`\`` : `\`${code.trim()}\``
+    })
+    return formatted
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || loading) return
+    const rawInput = input.trim()
+    if (!rawInput || loading) return
 
-    const userInput = input.trim()
+    const userInput = formatInput(rawInput)
     setInput('')
 
     const userMsg: StoredChatMessage = { role: 'user', content: userInput, timestamp: Date.now() }
@@ -371,12 +380,22 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
       {/* Input */}
       <form onSubmit={handleSubmit} className="p-3 border-t border-gray-800">
         <div className="flex gap-2">
-          <input
-            type="text"
+          <textarea
+            rows={1}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about the graph..."
-            className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+            onChange={(e) => {
+              setInput(e.target.value)
+              e.target.style.height = 'auto'
+              e.target.style.height = `${e.target.scrollHeight}px`
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSubmit(e as unknown as React.FormEvent)
+              }
+            }}
+            placeholder="Ask about the graph... (Shift+Enter for new line)"
+            className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
             disabled={loading}
           />
           {loading ? (

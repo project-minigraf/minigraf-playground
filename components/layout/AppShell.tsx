@@ -110,13 +110,16 @@ export function AppShell() {
     }
   }, [activeLessonId, lessonRunner.completedSteps])
 
-  const handleResult = useCallback((result: QueryResult, queryCode?: string) => {
+  const handleResult = useCallback(async (result: QueryResult, queryCode?: string) => {
     setQueryResult(result)
     setQueryError(null)
     if (queryCode) {
       setLastQuery(queryCode)
     }
-  }, [])
+    if (mode === 'lessons' && activeLessonId) {
+      await lessonRunner.submitResult(result)
+    }
+  }, [mode, activeLessonId, lessonRunner])
 
   const handleError = useCallback((error: string) => {
     setQueryError(error)
@@ -142,6 +145,8 @@ export function AppShell() {
           <LessonSidebar
             activeLessonId={activeLessonId}
             completedStepsPerLesson={completedStepsPerLesson}
+            currentStepIndex={lessonRunner.stepIndex}
+            totalSteps={lessonRunner.totalSteps}
             onSelect={handleActiveLessonChange}
           />
         )}
@@ -175,7 +180,10 @@ export function AppShell() {
             chatKey={mode === 'lessons' ? (activeLessonId ?? 'sandbox') : 'sandbox'}
             provider={sessionPrefs?.provider ?? 'groq'}
             model={sessionPrefs?.model ?? 'llama-3.3-70b-versatile'}
-            systemPrompt={buildSystemPrompt({ lessonStepGoal, progress: lessonCompletedSteps })}
+            systemPrompt={buildSystemPrompt({ 
+              lessonStepGoal: lessonRunner.currentStep?.instruction ?? lessonStepGoal, 
+              progress: lessonCompletedSteps 
+            })}
             introContext={mode === 'lessons' && activeLessonId ? LESSON_INTROS[activeLessonId] : undefined}
             introEnabled={prefsLoaded}
             onOpenSettings={() => setSettingsOpen(true)}

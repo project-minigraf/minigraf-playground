@@ -32,6 +32,11 @@ jest.mock('@/lib/lessons', () => ({
   ],
 }))
 
+jest.mock('@/lib/storage', () => ({
+  getLessonProgress: jest.fn().mockResolvedValue(null),
+  setLessonProgress: jest.fn().mockResolvedValue(undefined),
+}))
+
 describe('useLesson', () => {
   it('loads first step on mount', async () => {
     const { result } = renderHook(() => useLesson('test-lesson'))
