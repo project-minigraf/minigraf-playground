@@ -54,11 +54,50 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
     if (!apiKey) return
     setTestStatus('testing')
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ test: true, provider, model, apiKey }),
-      })
+      // Call provider directly from browser - never send key to /api/chat
+      let res: Response
+      switch (provider) {
+        case 'anthropic':
+          res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
+          })
+          break
+        case 'openai':
+          res = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
+          })
+          break
+        case 'gemini':
+          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }], generationConfig: { maxOutputTokens: 1 } }),
+          })
+          break
+        case 'xai':
+          res = await fetch('https://api.x.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ model, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 }),
+          })
+          break
+        default:
+          res = new Response(null, { status: 400 })
+      }
       setTestStatus(res.ok ? 'success' : 'failed')
     } catch {
       setTestStatus('failed')
@@ -87,7 +126,7 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
       </div>
 
       <div className="mb-4 p-3 bg-blue-900/30 border border-blue-800 rounded text-blue-200 text-sm">
-        Your API key is stored only in this browser. It is never sent to our servers.
+        Your API key is stored only in this browser and sent directly to {PROVIDERS.find(p => p.id === provider)?.name} to authenticate your requests. It never touches Minigraf's servers.
       </div>
 
       <div className="space-y-4">

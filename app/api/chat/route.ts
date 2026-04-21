@@ -1,9 +1,5 @@
 import { streamText } from 'ai'
 import { createGroq } from '@ai-sdk/groq'
-import { createAnthropic } from '@ai-sdk/anthropic'
-import { createOpenAI } from '@ai-sdk/openai'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
-import { createXai } from '@ai-sdk/xai'
 import { SignJWT, jwtVerify } from 'jose'
 import { NextRequest } from 'next/server'
 
@@ -30,41 +26,35 @@ async function makeTokenCookie(used: number): Promise<string> {
   return `${COOKIE_NAME}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800`
 }
 
-function getModel(provider: string, model: string, userKey?: string) {
-  switch (provider) {
-    case 'anthropic': return createAnthropic({ apiKey: userKey })(model)
-    case 'openai': return createOpenAI({ apiKey: userKey })(model)
-    case 'gemini': return createGoogleGenerativeAI({ apiKey: userKey })(model)
-    case 'xai': return createXai({ apiKey: userKey })(model)
-    default: return createGroq({ apiKey: process.env.GROQ_API_KEY })('llama-3.3-70b-versatile')
-  }
-}
-
 export async function POST(req: NextRequest) {
   const body = await req.json() as {
     messages?: { role: 'user' | 'assistant' | 'system'; content: string }[]
-    userKey?: string
     provider?: string
     model?: string
     systemPrompt?: string
     test?: boolean
   }
-  const { messages, userKey, provider = 'groq', model = 'llama-3.3-70b-versatile', systemPrompt, test } = body
-  const usingFallback = !userKey
 
-  if (usingFallback) {
-    const used = await getUsedTokens(req)
-    if (used >= TOKEN_CAP) {
-      return new Response(
-        JSON.stringify({ error: 'free_quota_exhausted', message: 'Free quota used up. Add your own API key for unlimited access.' }),
-        { status: 429, headers: { 'Content-Type': 'application/json' } }
-      )
-    }
+  // Belt and suspenders: reject any request trying to proxy a user key
+  if ('userKey' in body) {
+    return new Response(
+      JSON.stringify({ error: 'invalid_request', message: 'userKey must not be sent to this endpoint. Call the provider directly from the browser.' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    )
   }
 
-  const llm = usingFallback
-    ? createGroq({ apiKey: process.env.GROQ_API_KEY ?? '' })('llama-3.3-70b-versatile')
-    : getModel(provider, model, userKey)
+  const { messages, provider = 'groq', model = 'llama-3.3-70b-versatile', systemPrompt, test } = body
+
+  // Check token cap for anonymous usage
+  const used = await getUsedTokens(req)
+  if (used >= TOKEN_CAP) {
+    return new Response(
+      JSON.stringify({ error: 'free_quota_exhausted', message: 'Free quota used up. Add your own API key for unlimited access.' }),
+      { status: 429, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+
+  const llm = createGroq({ apiKey: process.env.GROQ_API_KEY ?? '' })(model)
 
   if (test) {
     return new Response('ok', { headers: { 'Content-Type': 'text/plain' } })
@@ -76,12 +66,10 @@ export async function POST(req: NextRequest) {
 
   const result = await streamText({ model: llm, messages: allMessages })
   const response = result.toTextStreamResponse()
-  
-  if (usingFallback) {
-    const approxTokens = JSON.stringify(messages).length / 4
-    const used = await getUsedTokens(req)
-    response.headers.set('Set-Cookie', await makeTokenCookie(used + approxTokens))
-  }
+
+  // Track token usage
+  const approxTokens = JSON.stringify(messages).length / 4
+  response.headers.set('Set-Cookie', await makeTokenCookie(used + approxTokens))
 
   return response
 }
