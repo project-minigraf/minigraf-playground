@@ -10,51 +10,65 @@ interface NavBarProps {
   onSettingsOpen: () => void
 }
 
+const darkStyles = {
+  header: 'border-gray-800 bg-gray-950',
+  title: 'text-white',
+  icon: 'text-gray-400 hover:text-white',
+  modeSwitcherBorder: 'border-gray-700',
+  modeButtonInactive: 'text-gray-400 hover:text-white',
+}
+
+const lightStyles = {
+  header: 'border-gray-200 bg-white',
+  title: 'text-gray-900',
+  icon: 'text-gray-600 hover:text-gray-900',
+  modeSwitcherBorder: 'border-gray-200',
+  modeButtonInactive: 'text-gray-600 hover:text-gray-900',
+}
+
 export function NavBar({ mode, onModeChange, onSettingsOpen }: NavBarProps) {
-  const [isDark, setIsDark] = useState(false)
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
 
   useEffect(() => {
-    const saved = localStorage.getItem('theme')
-    if (saved) {
-      setIsDark(saved === 'dark')
-    } else {
-      setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches)
-    }
+    const saved = localStorage.getItem('theme') as 'light' | 'dark' | null
+    const current = saved ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    setTheme(current)
+    document.documentElement.classList.toggle('dark', current === 'dark')
   }, [])
 
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('theme', 'dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('theme', 'light')
-    }
-  }, [isDark])
+  const isDark = theme === 'dark'
+  const styles = isDark ? darkStyles : lightStyles
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    localStorage.setItem('theme', next)
+    document.documentElement.classList.toggle('dark', next === 'dark')
+  }
 
   return (
-    <header className="h-12 flex items-center justify-between px-4 border-b border-gray-800 bg-gray-950 shrink-0">
-      <span className="font-bold text-white tracking-tight">Minigraf Playground</span>
+    <header className={`h-12 flex items-center justify-between px-4 border-b shrink-0 ${styles.header}`}>
+      <span className={`font-bold tracking-tight ${styles.title}`}>Minigraf Playground</span>
       <div className="flex items-center gap-3">
         <button
-          onClick={() => setIsDark(!isDark)}
-          className="text-gray-400 hover:text-white transition-colors"
-          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          onClick={toggleTheme}
+          className={`transition-colors ${styles.icon}`}
+          aria-label="Toggle theme"
         >
-          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
-        <div className="flex rounded-lg overflow-hidden border border-gray-700 text-sm">
+        <div className={`flex rounded-lg overflow-hidden border text-sm ${styles.modeSwitcherBorder}`}>
           {(['sandbox', 'lessons'] as Mode[]).map((m) => (
             <button
               key={m}
               onClick={() => onModeChange(m)}
-              className={`px-3 py-1 capitalize transition-colors ${mode === m ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+              className={`px-3 py-1 capitalize transition-colors ${mode === m ? 'bg-blue-600 text-white' : styles.modeButtonInactive}`}
             >
               {m}
             </button>
           ))}
         </div>
-        <button onClick={onSettingsOpen} className="text-gray-400 hover:text-white transition-colors">
+        <button onClick={onSettingsOpen} className={`transition-colors ${styles.icon}`}>
           <Settings size={18} />
         </button>
       </div>

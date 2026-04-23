@@ -209,7 +209,7 @@ export function AppShell() {
   }, [status, query, handleResult, handleError])
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900">
+    <div className="h-screen flex flex-col bg-white dark:bg-gray-900">
       <NavBar
         mode={mode}
         onModeChange={handleModeChange}
@@ -242,7 +242,7 @@ export function AppShell() {
             />
           </div>
           {/* Results */}
-          <div className="h-1/2 border-t border-gray-800 overflow-hidden">
+          <div className="h-1/2 border-t border-gray-200 dark:border-gray-800 overflow-hidden">
             <ResultsPanel result={queryResult} error={queryError} query={lastQuery} />
           </div>
         </div>
