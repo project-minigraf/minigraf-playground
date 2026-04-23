@@ -40,3 +40,4 @@ next-env.d.ts
 
 api-keys.txt
 .codex
+.worktrees
