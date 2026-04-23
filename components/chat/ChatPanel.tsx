@@ -64,8 +64,15 @@ function CodeBlock({ language, children, onRun }: { language: string; children: 
   )
 }
 
+function normalizeFences(text: string): string {
+  // LLMs sometimes place opening fences mid-sentence ("…: ```datalog\n…").
+  // CommonMark requires fences to start a line, so insert a newline before
+  // any ``` that is not already at the beginning of a line.
+  return text.replace(/([^\n])(`{3})/g, '$1\n$2')
+}
+
 function createCodeRenderer(onRunQuery?: (code: string) => void) {
-  return function CodeRenderer({ className, children, ...props }: { className?: string; children?: React.ReactNode }) {
+  return function CodeRenderer({ className, children, node: _node, ...props }: { className?: string; children?: React.ReactNode; node?: unknown }) {
     const match = /language-(\w+)/.exec(className || '')
     const isBlock = match !== null || String(children ?? '').includes('\n')
     return isBlock ? (
@@ -427,7 +434,7 @@ export function ChatPanel({
                   <ReactMarkdown
                     components={{ code: codeRenderer }}
                   >
-                    {m.content}
+                    {normalizeFences(m.content)}
                   </ReactMarkdown>
                 </div>
               ) : (
