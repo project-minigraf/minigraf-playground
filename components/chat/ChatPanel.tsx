@@ -67,9 +67,9 @@ function CodeBlock({ language, children, onRun }: { language: string; children: 
 function createCodeRenderer(onRunQuery?: (code: string) => void) {
   return function CodeRenderer({ className, children, ...props }: { className?: string; children?: React.ReactNode }) {
     const match = /language-(\w+)/.exec(className || '')
-    const inline = !match
-    return !inline ? (
-      <CodeBlock language={match[1]} onRun={onRunQuery}>{children}</CodeBlock>
+    const isBlock = match !== null || String(children ?? '').includes('\n')
+    return isBlock ? (
+      <CodeBlock language={match?.[1] ?? 'datalog'} onRun={onRunQuery}>{children}</CodeBlock>
     ) : (
       <code className="bg-gray-700 px-1 py-0.5 rounded text-xs" {...props}>
         {children}
@@ -440,7 +440,7 @@ export function ChatPanel({
             </div>
           </div>
         ))}
-        {loading && (messages.length === 0 || messages[messages.length - 1].role !== 'assistant') && (
+        {loading && (messages.length === 0 || messages[messages.length - 1].role !== 'assistant' || messages[messages.length - 1].content === '') && (
           <div className="flex justify-start">
             <div className="bg-gray-800 rounded-lg px-3 py-2 text-gray-400 text-sm">
               <span className="animate-pulse">⋯</span>
