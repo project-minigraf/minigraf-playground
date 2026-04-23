@@ -15,6 +15,7 @@ import { getSessionPrefs, setSessionPrefs, clearAllChatHistory } from '@/lib/sto
 import { buildSystemPrompt } from '@/lib/system-prompt'
 import { useMinigraf } from '@/hooks/useMinigraf'
 import { useLesson } from '@/hooks/useLesson'
+import { buildNarratePayload, buildTutorContext } from '@/lib/tutor'
 import type { QueryResult, SessionPrefs } from '@/lib/types'
 
 type Mode = 'sandbox' | 'lessons'
@@ -36,7 +37,6 @@ export function AppShell() {
   const [mode, setMode] = useState<Mode>('sandbox')
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null)
   const [lessonStepGoal, setLessonStepGoal] = useState<string | null>(null)
-  const [lessonCompletedSteps, setLessonCompletedSteps] = useState<string[]>([])
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [leftWidthPct, setLeftWidthPct] = useState(66)
   const [editorValue, setEditorValue] = useState(DEFAULT_CODE)
@@ -44,8 +44,10 @@ export function AppShell() {
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
   const [queryError, setQueryError] = useState<string | null>(null)
   const [lastQuery, setLastQuery] = useState<string>('')
+  const [tutorPayload, setTutorPayload] = useState<string | null>(null)
   const [sessionPrefs, setSessionPrefsState] = useState<SessionPrefs | null>(null)
   const [prefsLoaded, setPrefsLoaded] = useState(false)
+  const [pendingOpenStepContext, setPendingOpenStepContext] = useState<{ instruction: string; code: string } | null>(null)
 
   useEffect(() => {
     getSessionPrefs().then((prefs) => {
@@ -53,6 +55,8 @@ export function AppShell() {
         setMode(prefs.mode)
         if (prefs.mode === 'lessons' && prefs.activeLessonId) {
           setActiveLessonId(prefs.activeLessonId)
+        } else if (prefs.mode === 'lessons') {
+          setActiveLessonId('lesson-1')
         }
       }
       setSessionPrefsState(prefs)
@@ -81,21 +85,31 @@ export function AppShell() {
 
   const handleModeChange = useCallback(async (m: Mode) => {
     setMode(m)
+    const nextActiveLessonId =
+      m === 'lessons'
+        ? (activeLessonId ?? sessionPrefs?.activeLessonId ?? 'lesson-1')
+        : undefined
+
     if (m === 'lessons' && !activeLessonId) {
-      setActiveLessonId('lesson-1')
+      setActiveLessonId(nextActiveLessonId ?? 'lesson-1')
     }
     if (m !== 'lessons') {
       setLessonStepGoal(null)
-      setLessonCompletedSteps([])
     }
-    const prefs: SessionPrefs = { provider: 'gemini', model: '', mode: m }
+    setTutorPayload(null)
+    const prefs: SessionPrefs = {
+      provider: sessionPrefs?.provider ?? 'groq',
+      model: sessionPrefs?.model ?? 'llama-3.3-70b-versatile',
+      mode: m,
+      ...(nextActiveLessonId ? { activeLessonId: nextActiveLessonId } : {}),
+    }
     await setSessionPrefs(prefs)
-  }, [activeLessonId])
+  }, [activeLessonId, sessionPrefs])
 
   const handleActiveLessonChange = useCallback(async (id: string) => {
     setActiveLessonId(id)
     setLessonStepGoal(null)
-    setLessonCompletedSteps([])
+    setTutorPayload(null)
     const prefs: SessionPrefs = { provider: sessionPrefs?.provider ?? 'groq', model: sessionPrefs?.model ?? '', mode, activeLessonId: id }
     await setSessionPrefs(prefs)
   }, [sessionPrefs, mode])
@@ -103,7 +117,6 @@ export function AppShell() {
   const { status, error: wasmError, query } = useMinigraf()
   const lessonRunner = useLesson(mode === 'lessons' ? activeLessonId : null)
   const [lessonReady, setLessonReady] = useState(false)
-  const [lessonIntroTrigger, setLessonIntroTrigger] = useState(0)
 
   useEffect(() => {
     if (lessonRunner.starterCode) {
@@ -114,9 +127,19 @@ export function AppShell() {
   useEffect(() => {
     if (lessonRunner.lesson && lessonRunner.totalSteps > 0) {
       setLessonReady(true)
-      setLessonIntroTrigger((t) => t + 1)
+    } else {
+      setLessonReady(false)
     }
   }, [lessonRunner.lesson, lessonRunner.totalSteps])
+
+  const lessonIntroTrigger =
+    mode === 'lessons'
+      ? `${activeLessonId ?? 'none'}:${lessonRunner.currentStep?.id ?? 'no-step'}`
+      : 'sandbox'
+
+  useEffect(() => {
+    setPendingOpenStepContext(null)
+  }, [lessonIntroTrigger])
 
   useEffect(() => {
     if (activeLessonId) {
@@ -130,23 +153,59 @@ export function AppShell() {
   const handleResult = useCallback(async (result: QueryResult, queryCode?: string) => {
     setQueryResult(result)
     setQueryError(null)
-    if (queryCode) {
-      setLastQuery(queryCode)
+    const nextQuery = queryCode ?? lastQuery
+    if (queryCode) setLastQuery(queryCode)
+
+    if (nextQuery) {
+      setTutorPayload(
+        buildNarratePayload(
+          buildTutorContext({
+            query: nextQuery,
+            result,
+            error: null,
+            lessonStep: mode === 'lessons' ? lessonRunner.currentStep : null,
+            conversationHistory: [],
+          })
+        )
+      )
     }
+
+    if (mode === 'lessons' && lessonRunner.currentStep && !lessonRunner.currentStep.expectedResult) {
+      setPendingOpenStepContext({ instruction: lessonRunner.currentStep.instruction, code: editorValue })
+    }
+
     if (mode === 'lessons' && activeLessonId) {
       await lessonRunner.submitResult(result)
     }
-  }, [mode, activeLessonId, lessonRunner])
+  }, [lastQuery, mode, activeLessonId, lessonRunner, editorValue])
 
-  const handleError = useCallback((error: string) => {
+  const handleError = useCallback((error: string, queryCode?: string) => {
+    const nextQuery = queryCode ?? lastQuery
+    if (queryCode) setLastQuery(queryCode)
     setQueryError(error)
     setQueryResult(null)
-  }, [])
+    if (nextQuery) {
+      setTutorPayload(
+        buildNarratePayload(
+          buildTutorContext({
+            query: nextQuery,
+            result: null,
+            error,
+            lessonStep: mode === 'lessons' ? lessonRunner.currentStep : null,
+            conversationHistory: [],
+          })
+        )
+      )
+    }
+  }, [lastQuery, mode, lessonRunner.currentStep])
 
   const handleRunQueryFromChat = useCallback((code: string) => {
     if (status !== 'ready') return
     setLastQuery(code)
-    query(code).then((result) => handleResult(result, code)).catch(handleError)
+    query(code).then((result) => handleResult(result, code)).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error)
+      handleError(message, code)
+    })
   }, [status, query, handleResult, handleError])
 
   return (
@@ -199,11 +258,13 @@ export function AppShell() {
             model={sessionPrefs?.model ?? 'llama-3.3-70b-versatile'}
             systemPrompt={buildSystemPrompt({ 
               lessonStepGoal: lessonRunner.currentStep?.instruction ?? lessonStepGoal, 
-              progress: lessonCompletedSteps 
+              progress: lessonRunner.completedSteps
             })}
+            tutorPayload={tutorPayload}
             introContext={mode === 'lessons' && activeLessonId ? {
               ...LESSON_INTROS[activeLessonId],
               currentStep: lessonRunner.currentStep?.instruction ?? undefined,
+              completedOpenStep: pendingOpenStepContext ?? undefined,
             } : undefined}
             introEnabled={prefsLoaded && (mode !== 'lessons' ? true : lessonReady)}
             introTrigger={lessonIntroTrigger}

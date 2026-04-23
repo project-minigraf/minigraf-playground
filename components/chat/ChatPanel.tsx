@@ -77,17 +77,33 @@ function createCodeRenderer(onRunQuery?: (code: string) => void) {
   }
 }
 
-function buildIntroPrompt(introContext?: { lessonTitle?: string; lessonGoals?: string; currentStep?: string }): string {
+function buildIntroPrompt(
+  introContext: { lessonTitle?: string; lessonGoals?: string; currentStep?: string; completedOpenStep?: { instruction: string; code: string } } | undefined,
+  isFirstConversationMessage: boolean
+): string {
+  if (introContext?.completedOpenStep) {
+    const { instruction, code } = introContext.completedOpenStep
+    if (introContext.currentStep) {
+      return `The user just finished the open-ended step below and ran this code. In 1-2 sentences, briefly acknowledge what they built. Then in 1-2 sentences, introduce the next step. Do not re-introduce yourself or greet them again.\n\nCompleted step: ${instruction}\n\nTheir code:\n\`\`\`datalog\n${code}\n\`\`\`\n\nNext task: ${introContext.currentStep}`
+    }
+    return `The user just finished the final open-ended step below and ran this code. In 2-3 sentences, acknowledge what they built and congratulate them on completing the lesson. Do not re-introduce yourself.\n\nCompleted step: ${instruction}\n\nTheir code:\n\`\`\`datalog\n${code}\n\`\`\``
+  }
   if (introContext?.lessonTitle) {
     const goalsLine = introContext.lessonGoals ? ` It covers: ${introContext.lessonGoals}.` : ''
     const stepLine = introContext.currentStep ? `\n\nThe user's current task is:\n${introContext.currentStep}` : ''
-    return `The user is starting the lesson "${introContext.lessonTitle}".${goalsLine}${stepLine}\n\nIn 2-3 sentences, introduce yourself, describe what they will learn, and guide them through the current task.`
+    if (isFirstConversationMessage) {
+      return `The user is starting the lesson "${introContext.lessonTitle}".${goalsLine}${stepLine}\n\nIn 2-3 sentences, introduce yourself once, describe what they will learn, and guide them through the current task.`
+    }
+    return `The user is continuing the lesson "${introContext.lessonTitle}".${goalsLine}${stepLine}\n\nIn 1-2 sentences, guide them through the current task. Do not re-introduce yourself, greet them again, or repeat a generic tutor opening.`
   }
-  return 'In 2-3 sentences, introduce yourself as a friendly Minigraf tutor. Briefly mention that Minigraf supports Datalog querying and bi-temporal time travel, and invite the user to ask questions or start experimenting.'
+  if (isFirstConversationMessage) {
+    return 'In 2-3 sentences, introduce yourself as a friendly Minigraf tutor. Briefly mention that Minigraf supports Datalog querying and bi-temporal time travel, and invite the user to ask questions or start experimenting.'
+  }
+  return 'In 1-2 sentences, continue helping the user in the sandbox. Do not re-introduce yourself, greet them again, or repeat a generic tutor opening.'
 }
 
 import { AnonCapBanner } from './AnonCapBanner'
-import { getChatHistory, setChatHistory, clearChatHistory, getApiKey } from '@/lib/storage'
+import { setChatHistory, clearChatHistory, getApiKey } from '@/lib/storage'
 import type { ChatMessage as StoredChatMessage, Provider } from '@/lib/types'
 
 interface ChatPanelProps {
@@ -95,9 +111,10 @@ interface ChatPanelProps {
   provider: string
   model: string
   systemPrompt: string
-  introContext?: { lessonTitle?: string; lessonGoals?: string; currentStep?: string }
+  tutorPayload?: string | null
+  introContext?: { lessonTitle?: string; lessonGoals?: string; currentStep?: string; completedOpenStep?: { instruction: string; code: string } }
   introEnabled?: boolean
-  introTrigger?: number
+  introTrigger?: string | number
   onOpenSettings: () => void
   onRunQuery?: (code: string) => void
 }
@@ -142,20 +159,33 @@ function getProviderBody(provider: string, messages: { role: string; content: st
   }
 }
 
-export function ChatPanel({ chatKey, provider, model, systemPrompt, introContext, introEnabled, introTrigger, onOpenSettings, onRunQuery }: ChatPanelProps) {
+export function ChatPanel({
+  chatKey,
+  provider,
+  model,
+  systemPrompt,
+  tutorPayload,
+  introContext,
+  introEnabled,
+  introTrigger,
+  onOpenSettings,
+  onRunQuery,
+}: ChatPanelProps) {
   const [showAnonBanner, setShowAnonBanner] = useState(false)
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<StoredChatMessage[]>([])
   const [loading, setLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
-  const introFiredRef = useRef<Set<string>>(new Set())
+  const lastIntroTokenRef = useRef<Set<string>>(new Set())
+  const conversationStartedRef = useRef<Set<string>>(new Set())
+  const prevChatKeyRef = useRef<string | null>(null)
 
   const codeRenderer = useMemo(() => createCodeRenderer(onRunQuery), [onRunQuery])
 
   type LLMMessage = { role: 'user' | 'assistant' | 'system'; content: string }
 
-const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
+  const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
     setLoading(true)
     abortRef.current = new AbortController()
 
@@ -271,29 +301,40 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
   useEffect(() => { callLLMRef.current = callLLM }, [callLLM])
 
   useEffect(() => {
-    introFiredRef.current.delete(chatKey)
-  }, [chatKey])
+    let cancelled = false
 
-  useEffect(() => {
-    introFiredRef.current.delete(chatKey)
-    setMessages([])
-    clearChatHistory(chatKey)
-  }, [chatKey])
+    async function maybeIntroduce() {
+      const introToken = `${chatKey}:${introTrigger ?? 0}`
+      const isNewConversation = prevChatKeyRef.current !== chatKey
+      prevChatKeyRef.current = chatKey
 
-  useEffect(() => {
-    if (!introEnabled) return
-    getChatHistory(chatKey).then((history) => {
-      if (history.length === 0 && !introFiredRef.current.has(chatKey)) {
-        introFiredRef.current.add(chatKey)
-        const prompt = buildIntroPrompt(introContext)
-        const introMsgs: LLMMessage[] = [
-          ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
-          { role: 'user' as const, content: prompt },
-        ]
-        callLLMRef.current(introMsgs)
+      if (isNewConversation) {
+        setMessages([])
+        await clearChatHistory(chatKey)
+        conversationStartedRef.current.delete(chatKey)
       }
-    })
-  }, [chatKey, introEnabled, introTrigger])
+
+      if (cancelled || !introEnabled || lastIntroTokenRef.current.has(introToken)) {
+        return
+      }
+
+      const isFirstConversationMessage = !conversationStartedRef.current.has(chatKey)
+      conversationStartedRef.current.add(chatKey)
+      lastIntroTokenRef.current.add(introToken)
+      const prompt = buildIntroPrompt(introContext, isFirstConversationMessage)
+      const introMsgs: LLMMessage[] = [
+        ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+        { role: 'user' as const, content: prompt },
+      ]
+      await callLLMRef.current(introMsgs)
+    }
+
+    maybeIntroduce()
+
+    return () => {
+      cancelled = true
+    }
+  }, [chatKey, introContext, introEnabled, introTrigger, systemPrompt])
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -326,9 +367,24 @@ const callLLM = useCallback(async (allMessages: LLMMessage[]) => {
     const userMsg: StoredChatMessage = { role: 'user', content: userInput, timestamp: Date.now() }
     setMessages((prev) => [...prev, userMsg])
 
-    const allMessages: LLMMessage[] = systemPrompt
-      ? [{ role: 'system', content: systemPrompt }, ...messages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })), { role: 'user', content: userInput }]
-      : [...messages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })), { role: 'user', content: userInput }]
+    const allMessages: LLMMessage[] = []
+
+    if (systemPrompt) {
+      allMessages.push({ role: 'system', content: systemPrompt })
+    }
+
+    allMessages.push(
+      ...messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+    )
+
+    if (tutorPayload) {
+      allMessages.push({
+        role: 'user',
+        content: `Latest playground context:\n\n${tutorPayload}`,
+      })
+    }
+
+    allMessages.push({ role: 'user', content: userInput })
 
     await callLLM(allMessages)
   }
