@@ -312,7 +312,6 @@ export function ChatPanel({
       if (isNewConversation) {
         setMessages([])
         await clearChatHistory(chatKey)
-        conversationStartedRef.current.delete(chatKey)
       }
 
       if (cancelled || !introEnabled || lastIntroTokenRef.current.has(introToken)) {
