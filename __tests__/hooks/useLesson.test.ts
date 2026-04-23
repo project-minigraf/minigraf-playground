@@ -98,4 +98,31 @@ describe('useLesson', () => {
     await waitFor(() => expect(result.current.completedSteps).toContain('step-1'))
     expect(result.current.completedSteps).toContain('step-1')
   })
+
+  it('marks an open-ended step complete and advances past the lesson', async () => {
+    const { result } = renderHook(() => useLesson('test-lesson'))
+    await waitFor(() => expect(result.current.lesson).not.toBeNull())
+
+    await act(async () => {
+      await result.current.submitResult({
+        columns: ['?x'],
+        rows: [['bob']],
+        executionTimeMs: 1,
+      })
+    })
+    await waitFor(() => expect(result.current.currentStep?.id).toBe('step-2'))
+
+    let passed: boolean | undefined
+    await act(async () => {
+      passed = await result.current.submitResult({
+        columns: ['?any'],
+        rows: [['value']],
+        executionTimeMs: 1,
+      })
+    })
+
+    expect(passed).toBe(true)
+    await waitFor(() => expect(result.current.completedSteps).toContain('step-2'))
+    expect(result.current.currentStep).toBeNull()
+  })
 })

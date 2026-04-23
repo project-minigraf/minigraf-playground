@@ -9,6 +9,28 @@ export type TutorContext = {
   conversationHistory: ChatMessage[]
 }
 
+export function buildTutorContext(opts: {
+  query: string
+  result: QueryResult | null
+  error: string | null
+  lessonStep: LessonStep | null
+  conversationHistory: ChatMessage[]
+}): TutorContext {
+  const diff =
+    opts.result?.kind === 'query' && opts.lessonStep?.expectedResult
+      ? computeDiff(opts.result, opts.lessonStep.expectedResult)
+      : null
+
+  return {
+    query: opts.query,
+    queryResult: opts.result,
+    queryError: opts.error,
+    diff,
+    lessonStep: opts.lessonStep,
+    conversationHistory: opts.conversationHistory,
+  }
+}
+
 export function computeDiff(
   actual: { columns: string[]; rows: string[][] },
   expected: { columns: string[]; rows: string[][] }
@@ -36,6 +58,10 @@ export function buildNarratePayload(ctx: TutorContext): string {
       if (missing.length > 0) parts.push(`Missing tuples (expected but not in result): ${missing.map((r) => `[${r.join(', ')}]`).join(', ')}`)
       if (unexpected.length > 0) parts.push(`Unexpected tuples (in result but not expected): ${unexpected.map((r) => `[${r.join(', ')}]`).join(', ')}`)
     }
+  } else if (ctx.queryResult?.kind === 'mutation') {
+    parts.push('Mutation succeeded. No query result set was produced.')
+  } else if (ctx.queryResult?.kind === 'rule') {
+    parts.push('Rule registered successfully. No query result set was produced.')
   } else if (ctx.queryResult) {
     parts.push(`Query returned ${ctx.queryResult.rows.length} row(s). Provide contextual feedback.`)
   }

@@ -24,19 +24,31 @@ export function useLesson(lessonId: string | null) {
 
   const currentStep: LessonStep | null = lesson?.steps[stepIndex] ?? null
 
+  const completeCurrentStep = useCallback(async () => {
+    if (!currentStep || !lessonId) return
+
+    const updated = completedSteps.includes(currentStep.id)
+      ? completedSteps
+      : [...completedSteps, currentStep.id]
+
+    setCompletedSteps(updated)
+    await setLessonProgress(lessonId, updated)
+    setStepIndex((i) => i + 1)
+  }, [completedSteps, currentStep, lessonId])
+
   const submitResult = useCallback(async (result: QueryResult): Promise<boolean> => {
     if (!currentStep || !lessonId) return false
-    if (!currentStep.expectedResult) return true
+    if (!currentStep.expectedResult) {
+      await completeCurrentStep()
+      return true
+    }
     const diff = computeDiff(result, currentStep.expectedResult)
     const passed = diff.missing.length === 0 && diff.unexpected.length === 0
     if (passed) {
-      const updated = [...completedSteps, currentStep.id]
-      setCompletedSteps(updated)
-      await setLessonProgress(lessonId, updated)
-      setStepIndex((i) => i + 1)
+      await completeCurrentStep()
     }
     return passed
-  }, [currentStep, completedSteps, lessonId])
+  }, [completeCurrentStep, currentStep, lessonId])
 
   return {
     lesson,

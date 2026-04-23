@@ -1,6 +1,7 @@
 export type Provider = 'gemini' | 'anthropic' | 'openai' | 'xai' | 'groq'
 
 export type QueryResult = {
+  kind?: 'query' | 'mutation' | 'rule' | 'empty'
   columns: string[]
   rows: string[][]
   executionTimeMs: number

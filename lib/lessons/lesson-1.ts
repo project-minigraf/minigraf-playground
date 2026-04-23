@@ -7,41 +7,54 @@ export const lesson1: Lesson = {
   steps: [
     {
       id: 'l1-s1',
-      instruction: `## Step 1: Assert some facts\n\nIn Datalog, facts are statements that are unconditionally true.\n\nThe code below asserts friendship relationships. Run it to assert these facts.`,
-      starterCode: `friend(alice, bob).\nfriend(alice, carol).\nfriend(bob, dave).`,
+      instruction: `## Step 1: Assert some facts\n\nMinigraf stores facts as triples: \`[entity attribute value]\`.\n\nRun this transaction to add a few friendship edges to the graph.`,
+      starterCode: `(transact [[:alice :friend :bob]
+           [:alice :friend :carol]
+           [:bob :friend :dave]])`,
       expectedResult: { columns: [], rows: [] },
       hints: [
-        'Hit the ▶ Run button to assert the facts.',
-        'Facts have the form: predicate(arg1, arg2). — note the trailing period.',
+        'Hit the ▶ Run button to execute the transaction.',
+        'Facts are triples like `[:alice :friend :bob]` inside `(transact [...])`.',
       ],
       successMessage: 'Facts asserted! The graph now knows about these friendships.',
     },
     {
       id: 'l1-s2',
-      instruction: `## Step 2: Query a specific fact\n\nNow look up whether alice and bob are friends.\n\nA query starts with \`?-\`.`,
-      starterCode: `?- friend(alice, bob).`,
-      expectedResult: { columns: [], rows: [[]] },
-      hints: ['Queries start with ?- and end with a period.'],
-      successMessage: 'Correct! The query confirmed alice and bob are friends.',
+      instruction: `## Step 2: Query a specific fact\n\nNow look up Alice's friendship edge and restrict the result to Bob.`,
+      starterCode: `(query [:find ?friend
+        :where [:alice :friend ?friend]
+               [(= ?friend :bob)]])`,
+      expectedResult: { columns: ['?friend'], rows: [[':bob']] },
+      hints: [
+        'Queries use `(query [...])`, not `?-`.',
+        'You can keep only Bob with the predicate `[(= ?friend :bob)]`.',
+      ],
+      successMessage: 'Correct! The query found Bob as the matching friend.',
     },
     {
       id: 'l1-s3',
-      instruction: `## Step 3: Query with a variable\n\nVariables start with \`?\`. Use a variable to find all friends of alice.`,
-      starterCode: `?- friend(alice, ?who).`,
-      expectedResult: { columns: ['?who'], rows: [['bob'], ['carol']] },
+      instruction: `## Step 3: Query with a variable\n\nVariables start with \`?\`. Use one to find all of Alice's friends.`,
+      starterCode: `(query [:find ?who
+        :where [:alice :friend ?who]])`,
+      expectedResult: { columns: ['?who'], rows: [[':bob'], [':carol']] },
       hints: [
         'Variables like ?who match any value.',
-        'The result should be a table with one column (?who) and two rows.',
+        'The result should be a table with one column (`?who`) and two rows.',
       ],
       successMessage: "You found all of Alice's friends using a variable query!",
     },
     {
       id: 'l1-s4',
-      instruction: `## Step 4: Model your own dataset\n\nAssert at least 3 facts of your own choosing — anything you like (movies, cities, colleagues). Then write a query to retrieve one of them using a variable.\n\nThis step is open-ended — the tutor will give feedback.`,
-      starterCode: `% Your facts here\n\n% Your query here`,
+      instruction: `## Step 4: Model your own dataset\n\nWrite a transaction with at least 3 facts of your own choosing, then add a query that retrieves some of that data with a variable.\n\nThis step is open-ended — the tutor will give feedback.`,
+      starterCode: `(transact [[:movie/inception :title "Inception"]
+           [:movie/inception :genre :sci-fi]
+           [:movie/arrival :genre :sci-fi]])
+
+(query [:find ?movie
+        :where [?movie :genre :sci-fi]])`,
       hints: [
-        "Try: likes(alice, jazz). likes(alice, hiking). likes(bob, jazz).",
-        "Then query: ?- likes(alice, ?activity). to find all of Alice's interests.",
+        'Try a small movie, city, or hobby dataset using triples.',
+        'Then query it with a variable like `?movie` or `?city`.',
       ],
       successMessage: "Great work! You've modelled your own dataset.",
     },

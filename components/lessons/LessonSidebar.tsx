@@ -1,14 +1,11 @@
 'use client'
 import { useState } from 'react'
+import { LESSONS } from '@/lib/lessons'
 
-const LESSON_ORDER = ['lesson-1', 'lesson-2', 'lesson-3', 'lesson-4']
-
-const LESSON_TITLES: Record<string, string> = {
-  'lesson-1': 'Basic facts and queries',
-  'lesson-2': 'Rules and inference',
-  'lesson-3': 'Recursive rules',
-  'lesson-4': 'Bi-temporal time travel',
-}
+const LESSON_ORDER = LESSONS.map((lesson) => lesson.id)
+const LESSON_TITLES = Object.fromEntries(
+  LESSONS.map((lesson) => [lesson.id, lesson.title])
+) as Record<string, string>
 
 interface LessonSidebarProps {
   activeLessonId: string | null

@@ -10,7 +10,7 @@ interface QueryEditorProps {
   value: string
   onChange: (value: string) => void
   onResult: (result: QueryResult, queryCode?: string) => void
-  onError: (error: string) => void
+  onError: (error: string, queryCode?: string) => void
 }
 
 export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorProps) {
@@ -25,7 +25,7 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setQueryError(msg)
-      onError(msg)
+      onError(msg, value)
     }
   }, [value, query, onResult, onError])
 
