@@ -9,6 +9,7 @@ function CodeBlock({ language, children, onRun }: { language: string; children: 
   const [copied, setCopied] = useState(false)
   const [running, setRunning] = useState(false)
   const code = String(children).replace(/\n$/, '')
+  const prismLanguage = language === 'datalog' ? 'clojure' : language
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(code)
@@ -53,7 +54,7 @@ function CodeBlock({ language, children, onRun }: { language: string; children: 
       </div>
       <SyntaxHighlighter
         style={oneDark as Record<string, React.CSSProperties>}
-        language={language}
+        language={prismLanguage}
         PreTag="div"
         className="text-xs"
       >
