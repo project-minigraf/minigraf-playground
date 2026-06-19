@@ -77,6 +77,218 @@ const SETUP = `; Sellers
            [:order-a2-i1 :item/product :usb-cable]
            [:order-a2-i1 :item/price 19]])`
 
+// Lesson 2 variant: TechSource laptop price set via valid-time only (no permanent price).
+// This prevents duplicate rows when querying with :valid-at.
+const SETUP_L2 = `; Sellers
+(transact [[:corestore-direct :seller/name "Corestore Direct"]
+           [:corestore-direct :seller/sla-days 3]
+           [:techsource :seller/name "TechSource"]
+           [:techsource :seller/sla-days 7]
+           [:gadgethaus :seller/name "GadgetHaus"]
+           [:gadgethaus :seller/sla-days 5]])
+
+; Products
+(transact [[:laptop-pro :product/name "LaptopPro 15"]
+           [:phone-x :product/name "PhoneX 12"]
+           [:nc-headphones :product/name "NoiseCancel Pro"]
+           [:usb-cable :product/name "USB-C Cable"]
+           [:keyboard-k1 :product/name "Compact Keyboard"]])
+
+; Seller listings — TechSource laptop omits permanent price; set via valid-time below
+(transact [[:listing-cd-laptop :listing/seller :corestore-direct]
+           [:listing-cd-laptop :listing/product :laptop-pro]
+           [:listing-cd-laptop :listing/price 1299]
+           [:listing-ts-laptop :listing/seller :techsource]
+           [:listing-ts-laptop :listing/product :laptop-pro]
+           [:listing-cd-phone :listing/seller :corestore-direct]
+           [:listing-cd-phone :listing/product :phone-x]
+           [:listing-cd-phone :listing/price 799]
+           [:listing-gh-phone :listing/seller :gadgethaus]
+           [:listing-gh-phone :listing/product :phone-x]
+           [:listing-gh-phone :listing/price 819]
+           [:listing-cd-nc :listing/seller :corestore-direct]
+           [:listing-cd-nc :listing/product :nc-headphones]
+           [:listing-cd-nc :listing/price 249]
+           [:listing-ts-nc :listing/seller :techsource]
+           [:listing-ts-nc :listing/product :nc-headphones]
+           [:listing-ts-nc :listing/price 229]
+           [:listing-cd-usb :listing/seller :corestore-direct]
+           [:listing-cd-usb :listing/product :usb-cable]
+           [:listing-cd-usb :listing/price 19]
+           [:listing-ts-keyboard :listing/seller :techsource]
+           [:listing-ts-keyboard :listing/product :keyboard-k1]
+           [:listing-ts-keyboard :listing/price 89]])
+
+; Customers
+(transact [[:alice :customer/name "Alice"]
+           [:ben :customer/name "Ben"]
+           [:clara :customer/name "Clara"]])
+
+; Orders
+(transact [[:order-a1 :order/customer :alice]
+           [:order-a1 :order/seller :corestore-direct]
+           [:order-a1 :order/status :delivered]
+           [:order-b1 :order/customer :ben]
+           [:order-b1 :order/seller :techsource]
+           [:order-b1 :order/status :delivered]
+           [:order-c1 :order/customer :clara]
+           [:order-c1 :order/seller :gadgethaus]
+           [:order-c1 :order/status :placed]
+           [:order-a2 :order/customer :alice]
+           [:order-a2 :order/seller :corestore-direct]
+           [:order-a2 :order/status :placed]])
+
+; Order items
+(transact [[:order-a1-i1 :item/order :order-a1]
+           [:order-a1-i1 :item/product :laptop-pro]
+           [:order-a1-i1 :item/price 1299]
+           [:order-b1-i1 :item/order :order-b1]
+           [:order-b1-i1 :item/product :laptop-pro]
+           [:order-b1-i1 :item/price 1249]
+           [:order-b1-i2 :item/order :order-b1]
+           [:order-b1-i2 :item/product :nc-headphones]
+           [:order-b1-i2 :item/price 229]
+           [:order-c1-i1 :item/order :order-c1]
+           [:order-c1-i1 :item/product :phone-x]
+           [:order-c1-i1 :item/price 819]
+           [:order-a2-i1 :item/order :order-a2]
+           [:order-a2-i1 :item/product :usb-cable]
+           [:order-a2-i1 :item/price 19]])
+
+; TechSource laptop price history (valid-time only — no permanent price above)
+(transact {:valid-from "2025-01-01" :valid-to "2025-12-31"}
+  [[:listing-ts-laptop :listing/price 1299]])
+
+(transact {:valid-from "2026-01-01"}
+  [[:listing-ts-laptop :listing/price 1249]])`
+
+const lesson2: Lesson = {
+  id: 'marketplace-2',
+  title: 'Temporal price queries',
+  description: 'Use valid-time snapshots to inspect historical seller pricing and compare which seller was cheapest on a given date.',
+  steps: [
+    {
+      id: 'm2-s1',
+      instruction: `## Step 1: Observe the price history
+
+TechSource dropped the LaptopPro 15 price from $1,299 to $1,249 at the start of 2026. The dataset records this as two valid-time facts on the same listing entity.
+
+Run the setup and query — without \`:valid-at\`, you see only the currently valid price for TechSource alongside the permanent Corestore price.`,
+      starterCode: `${SETUP_L2}
+
+(query [:find ?seller-name ?product-name ?price
+        :where [?listing :listing/product :laptop-pro]
+               [?listing :listing/seller ?seller]
+               [?seller :seller/name ?seller-name]
+               [?listing :listing/price ?price]
+               [:laptop-pro :product/name ?product-name]])`,
+      expectedResult: {
+        columns: ['?seller-name', '?product-name', '?price'],
+        rows: [
+          ['Corestore Direct', 'LaptopPro 15', '1299'],
+          ['TechSource', 'LaptopPro 15', '1249'],
+        ],
+      },
+      hints: [
+        'Without `:valid-at`, the query sees facts valid at the current date (2026). TechSource\'s current price is 1249.',
+        'The listing entity `:listing-ts-laptop` has no permanent price — only the valid-time transactions carry that attribute.',
+      ],
+      successMessage: 'Both sellers visible, TechSource showing its current 2026 price.',
+    },
+    {
+      id: 'm2-s2',
+      instruction: `## Step 2: Snapshot at a past date
+
+Add \`:valid-at "2025-06-01"\` to the query. This asks: "what prices were in effect on 1 June 2025?" TechSource's old price (1,299) becomes visible — the same as Corestore's.`,
+      starterCode: `${SETUP_L2}
+
+(query [:find ?seller-name ?product-name ?price
+        :valid-at "2025-06-01"
+        :where [?listing :listing/product :laptop-pro]
+               [?listing :listing/seller ?seller]
+               [?seller :seller/name ?seller-name]
+               [?listing :listing/price ?price]
+               [:laptop-pro :product/name ?product-name]])`,
+      expectedResult: {
+        columns: ['?seller-name', '?product-name', '?price'],
+        rows: [
+          ['Corestore Direct', 'LaptopPro 15', '1299'],
+          ['TechSource', 'LaptopPro 15', '1299'],
+        ],
+      },
+      hints: [
+        '`:valid-at` filters to facts whose valid-time range covers the given date — 2025-06-01 falls within the 2025-01-01/2025-12-31 window.',
+        'Both sellers show 1299: before the price drop, TechSource had no advantage.',
+      ],
+      successMessage: 'Mid-2025 snapshot: both sellers priced equally at 1,299.',
+    },
+    {
+      id: 'm2-s3',
+      instruction: `## Step 3: Identify the cheaper seller after the price drop
+
+Change \`:valid-at\` to \`"2026-06-01"\` and add an expression clause \`[(< ?price 1260)]\` to keep only the seller that undercuts the threshold — TechSource at 1,249.`,
+      starterCode: `${SETUP_L2}
+
+(query [:find ?seller-name ?product-name ?price
+        :valid-at "2026-06-01"
+        :where [?listing :listing/product :laptop-pro]
+               [?listing :listing/seller ?seller]
+               [?seller :seller/name ?seller-name]
+               [?listing :listing/price ?price]
+               [:laptop-pro :product/name ?product-name]
+               [(< ?price 1260)]])`,
+      expectedResult: {
+        columns: ['?seller-name', '?product-name', '?price'],
+        rows: [['TechSource', 'LaptopPro 15', '1249']],
+      },
+      hints: [
+        'Remove the expression clause to see both sellers at their 2026 prices (Corestore 1299, TechSource 1249).',
+        '`:valid-at` and expression clauses compose freely — the temporal filter applies first, then the expression filters the surviving rows.',
+      ],
+      successMessage: 'TechSource isolated as the cheaper option after the 2026 price drop.',
+    },
+    {
+      id: 'm2-s4',
+      instruction: `## Step 4: Model your own price change
+
+Pick any product, assert two valid-time price facts for it (an old price for 2024 and a new price from 2025 onwards), then write two queries — one at \`"2024-06-01"\` and one at \`"2025-06-01"\` — to show the change.
+
+This step is open-ended — the tutor will give feedback.`,
+      starterCode: `${SETUP_L2}
+
+; Assert a price change for a product of your choice
+(transact {:valid-from "2024-01-01" :valid-to "2024-12-31"}
+  [[:listing-gh-phone :listing/price 899]])
+
+(transact {:valid-from "2025-01-01"}
+  [[:listing-gh-phone :listing/price 819]])
+
+; Query 1: price in 2024
+(query [:find ?seller-name ?product-name ?price
+        :valid-at "2024-06-01"
+        :where [?listing :listing/product :phone-x]
+               [?listing :listing/seller ?seller]
+               [?seller :seller/name ?seller-name]
+               [?listing :listing/price ?price]
+               [:phone-x :product/name ?product-name]])
+
+; Query 2: price in 2025
+(query [:find ?seller-name ?product-name ?price
+        :valid-at "2025-06-01"
+        :where [?listing :listing/product :phone-x]
+               [?listing :listing/seller ?seller]
+               [?seller :seller/name ?seller-name]
+               [?listing :listing/price ?price]
+               [:phone-x :product/name ?product-name]])`,
+      hints: [
+        'The starter code shows GadgetHaus reducing the PhoneX price from 899 to 819 — swap in your own product and numbers.',
+        'Make sure your two valid-time ranges are non-overlapping to avoid duplicate rows.',
+      ],
+      successMessage: 'You modelled a price change and queried it at two points in valid time.',
+    },
+  ],
+}
+
 const lesson1: Lesson = {
   id: 'marketplace-1',
   title: 'Multi-seller joins',
@@ -191,5 +403,5 @@ export const tutorialMarketplace: Tutorial = {
   description: 'Model a multi-seller e-commerce platform with temporal price tracking.',
   goals: 'multi-seller joins, temporal price comparison, aggregates per seller, negation, and disjunction',
   prerequisiteTutorialId: 'basic-datalog',
-  lessons: [lesson1],
+  lessons: [lesson1, lesson2],
 }
