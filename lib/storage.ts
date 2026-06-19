@@ -17,48 +17,78 @@ async function getDB(): Promise<IDBPDatabase> {
   })
 }
 
+async function safeGetDB(): Promise<IDBPDatabase | null> {
+  try { return await getDB() }
+  catch (e) { console.warn('IndexedDB unavailable:', e); return null }
+}
+
 export async function getGraphState(): Promise<string | null> {
-  return (await (await getDB()).get('graph_state', 'current')) ?? null
+  const db = await safeGetDB()
+  if (!db) return null
+  return (await db.get('graph_state', 'current')) ?? null
 }
 export async function setGraphState(content: string): Promise<void> {
-  await (await getDB()).put('graph_state', content, 'current')
+  const db = await safeGetDB()
+  if (!db) return
+  await db.put('graph_state', content, 'current')
 }
 
 export async function getSessionPrefs(): Promise<SessionPrefs | null> {
-  return (await (await getDB()).get('session_prefs', 'prefs')) ?? null
+  const db = await safeGetDB()
+  if (!db) return null
+  return (await db.get('session_prefs', 'prefs')) ?? null
 }
 export async function setSessionPrefs(prefs: SessionPrefs): Promise<void> {
-  await (await getDB()).put('session_prefs', prefs, 'prefs')
+  const db = await safeGetDB()
+  if (!db) return
+  await db.put('session_prefs', prefs, 'prefs')
 }
 
 export async function getApiKey(provider: Provider): Promise<string | null> {
-  return (await (await getDB()).get('api_keys', provider)) ?? null
+  const db = await safeGetDB()
+  if (!db) return null
+  return (await db.get('api_keys', provider)) ?? null
 }
 export async function setApiKey(provider: Provider, key: string): Promise<void> {
-  await (await getDB()).put('api_keys', key, provider)
+  const db = await safeGetDB()
+  if (!db) return
+  await db.put('api_keys', key, provider)
 }
 export async function clearApiKey(provider: Provider): Promise<void> {
-  await (await getDB()).delete('api_keys', provider)
+  const db = await safeGetDB()
+  if (!db) return
+  await db.delete('api_keys', provider)
 }
 
 export async function getLessonProgress(lessonId: string): Promise<{ completedSteps: string[] } | null> {
-  return (await (await getDB()).get('lesson_progress', lessonId)) ?? null
+  const db = await safeGetDB()
+  if (!db) return null
+  return (await db.get('lesson_progress', lessonId)) ?? null
 }
 export async function setLessonProgress(lessonId: string, completedSteps: string[]): Promise<void> {
-  await (await getDB()).put('lesson_progress', { completedSteps }, lessonId)
+  const db = await safeGetDB()
+  if (!db) return
+  await db.put('lesson_progress', { completedSteps }, lessonId)
 }
 
 export async function getChatHistory(key: string): Promise<ChatMessage[]> {
-  return (await (await getDB()).get('chat_history', key)) ?? []
+  const db = await safeGetDB()
+  if (!db) return []
+  return (await db.get('chat_history', key)) ?? []
 }
 export async function setChatHistory(key: string, messages: ChatMessage[]): Promise<void> {
-  await (await getDB()).put('chat_history', messages, key)
+  const db = await safeGetDB()
+  if (!db) return
+  await db.put('chat_history', messages, key)
 }
 export async function clearChatHistory(key: string): Promise<void> {
-  await (await getDB()).put('chat_history', [], key)
+  const db = await safeGetDB()
+  if (!db) return
+  await db.put('chat_history', [], key)
 }
 export async function clearAllChatHistory(): Promise<void> {
-  const db = await getDB()
+  const db = await safeGetDB()
+  if (!db) return
   const tx = db.transaction('chat_history', 'readwrite')
   const store = tx.objectStore('chat_history')
   const keys = await store.getAllKeys()
