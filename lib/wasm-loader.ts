@@ -1,6 +1,6 @@
 import init, { BrowserDb } from '@minigraf/browser'
 
-export async function loadMinigraf() {
+export async function loadMinigraf(dbName: string) {
   await init()
-  return BrowserDb.open('minigraf')
+  return BrowserDb.open(dbName)
 }
