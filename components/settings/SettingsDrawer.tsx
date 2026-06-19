@@ -33,7 +33,7 @@ export function SettingsDrawer({ onClose }: SettingsDrawerProps) {
   useEffect(() => {
     if (loaded) return
     getSessionPrefs().then((prefs) => {
-      const p = prefs?.provider || 'gemini'
+      const p = prefs?.provider || 'groq'
       setProvider(p)
       setModel(prefs?.model || MODELS[p][0])
       return getApiKey(p)
