@@ -77,7 +77,7 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
     }
   }, [queryError])
 
-  async function share() {
+  const share = useCallback(async () => {
     const url = `${window.location.origin}${window.location.pathname}#q=${encodeQuery(value)}`
     try {
       await navigator.clipboard.writeText(url)
@@ -86,7 +86,7 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
     } catch {
       // clipboard write failed — do not show "Copied" confirmation
     }
-  }
+  }, [value])
 
   const displayError = queryError || wasmError
 
