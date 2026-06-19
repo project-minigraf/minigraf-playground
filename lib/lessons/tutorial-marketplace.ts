@@ -397,11 +397,116 @@ This step is open-ended — the tutor will give feedback.`,
   ],
 }
 
+const lesson3: Lesson = {
+  id: 'marketplace-3',
+  title: 'Aggregates per seller',
+  description: 'Use count, sum, and max to compute order totals and revenue figures grouped by seller.',
+  steps: [
+    {
+      id: 'm3-s1',
+      instruction: `## Step 1: Count orders per seller
+
+\`(count ?order)\` in the \`:find\` clause counts rows. When mixed with a plain variable like \`?seller-name\`, results are grouped by that variable — one row per distinct seller name.`,
+      starterCode: `${SETUP}
+
+(query [:find ?seller-name (count ?order)
+        :where [?order :order/seller ?seller]
+               [?seller :seller/name ?seller-name]])`,
+      expectedResult: {
+        columns: ['?seller-name', '(count ?order)'],
+        rows: [
+          ['Corestore Direct', '2'],
+          ['GadgetHaus', '1'],
+          ['TechSource', '1'],
+        ],
+      },
+      hints: [
+        'Minigraf groups by all plain variables in `:find` and aggregates within each group.',
+        'Alice has two orders from Corestore Direct, so that seller gets a count of 2.',
+      ],
+      successMessage: 'Order counts per seller computed correctly.',
+    },
+    {
+      id: 'm3-s2',
+      instruction: `## Step 2: Total revenue per seller
+
+Join from order → order item → item price, then use \`(sum ?price)\` grouped by seller. Add \`:with ?item\` to ensure two items with the same price are counted as separate contributions — otherwise they would collapse into a single row before summing.`,
+      starterCode: `${SETUP}
+
+(query [:find ?seller-name (sum ?price)
+        :with ?item
+        :where [?order :order/seller ?seller]
+               [?seller :seller/name ?seller-name]
+               [?item :item/order ?order]
+               [?item :item/price ?price]])`,
+      expectedResult: {
+        columns: ['?seller-name', '(sum ?price)'],
+        rows: [
+          ['Corestore Direct', '1318'],
+          ['GadgetHaus', '819'],
+          ['TechSource', '1478'],
+        ],
+      },
+      hints: [
+        'Corestore Direct: laptop 1299 + usb-cable 19 = 1318. TechSource: laptop 1249 + headphones 229 = 1478.',
+        '`:with ?item` adds the item entity to the grouping key so that two items at the same price are not merged before `sum` runs.',
+      ],
+      successMessage: 'Revenue totals match: TechSource leads at 1,478 despite a lower unit price.',
+    },
+    {
+      id: 'm3-s3',
+      instruction: `## Step 3: Most expensive item ever sold per seller
+
+Swap \`sum\` for \`max\` on the same join path. \`(max ?price)\` returns the highest single-item price within each seller group.`,
+      starterCode: `${SETUP}
+
+(query [:find ?seller-name (max ?price)
+        :where [?order :order/seller ?seller]
+               [?seller :seller/name ?seller-name]
+               [?item :item/order ?order]
+               [?item :item/price ?price]])`,
+      expectedResult: {
+        columns: ['?seller-name', '(max ?price)'],
+        rows: [
+          ['Corestore Direct', '1299'],
+          ['GadgetHaus', '819'],
+          ['TechSource', '1249'],
+        ],
+      },
+      hints: [
+        '`:with` is not needed for `max` — duplicate values do not affect the maximum.',
+        'Corestore\'s max is 1299 (Alice\'s laptop); TechSource\'s is 1249 (Ben\'s discounted laptop).',
+      ],
+      successMessage: 'Max item price per seller surfaced correctly.',
+    },
+    {
+      id: 'm3-s4',
+      instruction: `## Step 4: Count distinct customers per seller
+
+Write a query that uses \`(count-distinct ?customer)\` to find how many unique customers have ordered from each seller. Then extend it with an expression clause to keep only sellers with more than one distinct customer.
+
+This step is open-ended — the tutor will give feedback.`,
+      starterCode: `${SETUP}
+
+; Count distinct customers per seller
+(query [:find ?seller-name (count-distinct ?customer)
+        :where [?order :order/seller ?seller]
+               [?seller :seller/name ?seller-name]
+               [?order :order/customer ?customer]])`,
+      hints: [
+        'Alice placed two orders with Corestore Direct but she is one distinct customer — `count-distinct` handles this correctly.',
+        'Add `[(> ?count 1)]` ... but you\'ll need to bind the aggregate result to a variable first with `:with` or restructure. The tutor can guide you.',
+      ],
+      successMessage: 'You used count-distinct to deduplicate customers across orders.',
+    },
+  ],
+}
+
 export const tutorialMarketplace: Tutorial = {
   id: 'marketplace',
   title: 'Corestore Marketplace',
   description: 'Model a multi-seller e-commerce platform with temporal price tracking.',
   goals: 'multi-seller joins, temporal price comparison, aggregates per seller, negation, and disjunction',
   prerequisiteTutorialId: 'basic-datalog',
-  lessons: [lesson1, lesson2],
+  lessons: [lesson1, lesson2, lesson3],
 }
