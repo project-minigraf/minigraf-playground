@@ -6,6 +6,7 @@ import { StateEffect, StateField } from '@codemirror/state'
 import { datalogLanguage } from './datalog-lang'
 import { useMinigraf } from '@/hooks/useMinigraf'
 import type { QueryResult } from '@/lib/types'
+import { encodeQuery } from '@/lib/share'
 
 // CodeMirror state machinery for error line highlighting
 const addErrorLine = StateEffect.define<number>()   // 1-based line number
@@ -36,6 +37,7 @@ interface QueryEditorProps {
 export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorProps) {
   const { status, error: wasmError, query } = useMinigraf()
   const [queryError, setQueryError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
   const viewRef = useRef<EditorView | null>(null)
 
   const handleRun = useCallback(async () => {
@@ -75,6 +77,17 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
     }
   }, [queryError])
 
+  async function share() {
+    const url = `${window.location.origin}${window.location.pathname}#q=${encodeQuery(value)}`
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // clipboard write failed — do not show "Copied" confirmation
+    }
+  }
+
   const displayError = queryError || wasmError
 
   const isReady = status === 'ready'
@@ -109,13 +122,21 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
         <span className="text-xs text-gray-500">
           {statusText}
         </span>
-        <button
-          onClick={handleRun}
-          disabled={!isReady}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded transition-colors"
-        >
-          <span>▶</span> Run
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={share}
+            className="px-2 py-1 text-xs text-gray-400 hover:text-white border border-gray-700 rounded-md transition-colors"
+          >
+            {copied ? '✓ Copied' : 'Share'}
+          </button>
+          <button
+            onClick={handleRun}
+            disabled={!isReady}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium rounded transition-colors"
+          >
+            <span>▶</span> Run
+          </button>
+        </div>
       </div>
     </div>
   )
