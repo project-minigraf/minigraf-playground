@@ -17,10 +17,15 @@ import { useMinigraf } from '@/hooks/useMinigraf'
 import { useLesson } from '@/hooks/useLesson'
 import { buildNarratePayload, buildTutorContext } from '@/lib/tutor'
 import type { QueryResult, SessionPrefs } from '@/lib/types'
+import { decodeQuery } from '@/lib/share'
 
 type Mode = 'sandbox' | 'lessons'
 type MobileTab = 'editor' | 'results' | 'chat'
 
+// Captured at module-load time (once per page load).
+// Reading window.location.hash here — before any React lifecycle — ensures
+// Strict Mode's mount/unmount/remount cycle does not lose the original hash value.
+const INITIAL_SHARE_HASH = typeof window !== 'undefined' ? window.location.hash : ''
 
 const LESSON_INTROS: Record<string, { lessonTitle: string; lessonGoals: string; currentStep?: string }> = {
   'lesson-1': { lessonTitle: 'Basic Facts and Queries', lessonGoals: 'asserting and retracting facts, running basic Datalog queries, and reading query results' },
@@ -53,6 +58,8 @@ export function AppShell() {
   const [mobileTab, setMobileTab] = useState<MobileTab>('editor')
   const [isDesktop, setIsDesktop] = useState(true)
 
+  const hashAppliedRef = useRef(false)
+
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth >= 768)
     check()
@@ -60,14 +67,32 @@ export function AppShell() {
     return () => window.removeEventListener('resize', check)
   }, [])
 
+  // Read #q= hash on mount and pre-populate editor in sandbox mode
+  useEffect(() => {
+    if (INITIAL_SHARE_HASH.startsWith('#q=')) {
+      const decoded = decodeQuery(INITIAL_SHARE_HASH.slice(3))
+      if (decoded) {
+        setEditorValue(decoded)
+        setMode('sandbox')
+        history.replaceState(null, '', window.location.pathname + window.location.search)
+        hashAppliedRef.current = true
+      }
+    }
+  }, [])
+
+  // NOTE: This effect must be declared after the hash effect above.
+  // The hash effect sets hashAppliedRef.current synchronously; this effect's
+  // async .then() reads it. Reordering these two effects breaks the guard.
   useEffect(() => {
     getSessionPrefs().then((prefs) => {
-      if (prefs?.mode) {
-        setMode(prefs.mode)
-        if (prefs.mode === 'lessons' && prefs.activeLessonId) {
-          setActiveLessonId(prefs.activeLessonId)
-        } else if (prefs.mode === 'lessons') {
-          setActiveLessonId('lesson-1')
+      if (!hashAppliedRef.current) {
+        if (prefs?.mode) {
+          setMode(prefs.mode)
+          if (prefs.mode === 'lessons' && prefs.activeLessonId) {
+            setActiveLessonId(prefs.activeLessonId)
+          } else if (prefs.mode === 'lessons') {
+            setActiveLessonId('lesson-1')
+          }
         }
       }
       setSessionPrefsState(prefs)
