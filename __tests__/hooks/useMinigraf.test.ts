@@ -12,7 +12,7 @@ jest.mock('@/lib/wasm-loader', () => ({
 }))
 
 beforeEach(() => {
-  _clearInstanceCache()
+  _clearInstanceCache?.()
   mockClose.mockClear()
   ;(loadMinigraf as jest.Mock).mockClear()
 })

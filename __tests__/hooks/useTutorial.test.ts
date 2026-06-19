@@ -74,8 +74,11 @@ describe('useTutorial', () => {
 
   it('switchTutorial persists activeTutorialId to session prefs', async () => {
     mockGetSessionPrefs.mockResolvedValue({ provider: 'groq', model: 'llama' })
+    mockGetLessonProgress.mockResolvedValue({ completedSteps: ['l1-s1', 'l1-s2'] })
     const { result } = renderHook(() => useTutorial('basic-datalog'))
-    await waitFor(() => expect(result.current.activeTutorial).not.toBeNull())
+    await waitFor(() =>
+      expect(result.current.completedStepsPerLesson['lesson-1']).toEqual(['l1-s1', 'l1-s2'])
+    )
     await act(async () => { result.current.switchTutorial('marketplace') })
     expect(mockSetSessionPrefs).toHaveBeenCalledWith(
       expect.objectContaining({ activeTutorialId: 'marketplace' })

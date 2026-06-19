@@ -10,10 +10,9 @@ export const MAX_CACHED_INSTANCES = 2
 
 const instanceCache = new Map<string, { promise: Promise<unknown>; lastUsed: number }>()
 
-/** Exported for testing only — clears the module-level LRU cache. */
-export function _clearInstanceCache() {
-  instanceCache.clear()
-}
+/** Exported for testing only — clears the module-level LRU cache. Undefined in production. */
+export const _clearInstanceCache =
+  process.env.NODE_ENV === 'test' ? () => instanceCache.clear() : undefined
 
 function evictLRUIfNeeded() {
   if (instanceCache.size < MAX_CACHED_INSTANCES) return

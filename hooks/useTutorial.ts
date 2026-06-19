@@ -17,16 +17,18 @@ export function useTutorial(initialTutorialId: string | null) {
     TUTORIALS.find((t) => t.id === activeTutorialId) ?? null
 
   useEffect(() => {
-    if (!activeTutorial) return
+    const allLessons = TUTORIALS.flatMap((t) => t.lessons)
+    if (allLessons.length === 0) return
     Promise.all(
-      activeTutorial.lessons.map((lesson) =>
+      allLessons.map((lesson) =>
         getLessonProgress(lesson.id).then(
           (p) => [lesson.id, p?.completedSteps ?? []] as const
         )
       )
     ).then((entries) => {
       const record = Object.fromEntries(entries)
-      setCompletedStepsPerLesson((prev) => ({ ...prev, ...record }))
+      setCompletedStepsPerLesson(record)
+      if (!activeTutorial) return
       const firstIncomplete =
         activeTutorial.lessons.find((lesson) => {
           const completed = record[lesson.id] ?? []
@@ -53,6 +55,7 @@ export function useTutorial(initialTutorialId: string | null) {
   )
 
   const switchTutorial = useCallback(async (tutorialId: string) => {
+    if (!isUnlocked(tutorialId)) return
     setActiveTutorialId(tutorialId)
     const prefs = await getSessionPrefs()
     await setSessionPrefs({
@@ -62,7 +65,7 @@ export function useTutorial(initialTutorialId: string | null) {
       ...(prefs?.activeLessonId ? { activeLessonId: prefs.activeLessonId } : {}),
       activeTutorialId: tutorialId,
     })
-  }, [])
+  }, [isUnlocked])
 
   return {
     activeTutorial,
