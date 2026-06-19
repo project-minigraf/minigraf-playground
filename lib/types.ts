@@ -12,6 +12,7 @@ export type SessionPrefs = {
   model: string
   mode?: 'sandbox' | 'lessons'
   activeLessonId?: string
+  activeTutorialId?: string
 }
 
 export type ChatMessage = {
@@ -34,6 +35,15 @@ export type Lesson = {
   title: string
   description: string
   steps: LessonStep[]
+}
+
+export type Tutorial = {
+  id: string
+  title: string
+  description: string
+  goals: string
+  prerequisiteTutorialId?: string
+  lessons: Lesson[]
 }
 
 export type TutorDiff = {

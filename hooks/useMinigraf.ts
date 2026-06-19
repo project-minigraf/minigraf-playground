@@ -6,25 +6,60 @@ import { normalizeExecutionResults, splitForms } from '@/lib/minigraf-execution'
 
 type Status = 'loading' | 'ready' | 'error'
 
-let instancePromise: Promise<unknown> | null = null
+export const MAX_CACHED_INSTANCES = 2
 
-function getOrCreateInstance() {
-  if (!instancePromise) {
-    instancePromise = loadMinigraf()
+const instanceCache = new Map<string, { promise: Promise<unknown>; lastUsed: number }>()
+
+/** Exported for testing only — clears the module-level LRU cache. Undefined in production. */
+export const _clearInstanceCache =
+  process.env.NODE_ENV === 'test' ? () => instanceCache.clear() : undefined
+
+function evictLRUIfNeeded() {
+  if (instanceCache.size < MAX_CACHED_INSTANCES) return
+  let lruKey = ''
+  let lruTime = Infinity
+  for (const [key, entry] of instanceCache) {
+    if (entry.lastUsed < lruTime) {
+      lruTime = entry.lastUsed
+      lruKey = key
+    }
   }
-  return instancePromise
+  if (lruKey) {
+    instanceCache.get(lruKey)!.promise.then((inst) =>
+      (inst as { close?: () => void }).close?.()
+    )
+    instanceCache.delete(lruKey)
+  }
 }
 
-export function useMinigraf() {
+function getOrCreateInstance(tutorialId: string): Promise<unknown> {
+  if (instanceCache.has(tutorialId)) {
+    instanceCache.get(tutorialId)!.lastUsed = Date.now()
+    return instanceCache.get(tutorialId)!.promise
+  }
+  evictLRUIfNeeded()
+  const promise = loadMinigraf(`minigraf-${tutorialId}`)
+  instanceCache.set(tutorialId, { promise, lastUsed: Date.now() })
+  return promise
+}
+
+export function useMinigraf(tutorialId: string) {
   const [status, setStatus] = useState<Status>('loading')
   const [error, setError] = useState<string | null>(null)
   const instanceRef = useRef<unknown>(null)
 
   useEffect(() => {
-    getOrCreateInstance()
-      .then((inst) => { instanceRef.current = inst; setStatus('ready') })
-      .catch((err) => { setError(String(err)); setStatus('error') })
-  }, [])
+    setStatus('loading')
+    getOrCreateInstance(tutorialId)
+      .then((inst) => {
+        instanceRef.current = inst
+        setStatus('ready')
+      })
+      .catch((err) => {
+        setError(String(err))
+        setStatus('error')
+      })
+  }, [tutorialId])
 
   async function query(datalog: string): Promise<QueryResult> {
     if (!instanceRef.current) throw new Error('Minigraf not ready')
