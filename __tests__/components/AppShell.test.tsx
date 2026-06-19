@@ -79,10 +79,22 @@ jest.mock('@/lib/storage', () => ({
 }))
 
 jest.mock('@/hooks/useMinigraf', () => ({
-  useMinigraf: () => ({
+  useMinigraf: (_tutorialId: string) => ({
     status: 'ready',
     error: null,
     query: jest.fn(),
+  }),
+}))
+
+jest.mock('@/hooks/useTutorial', () => ({
+  useTutorial: () => ({
+    activeTutorial: { id: 'basic-datalog', title: 'Basic Datalog', goals: 'asserting facts, querying, rules', lessons: [] },
+    activeLessonId: 'lesson-1',
+    setActiveLessonId: jest.fn(),
+    switchTutorial: jest.fn(),
+    isUnlocked: () => true,
+    completedStepsPerLesson: {},
+    setCompletedStepsPerLesson: jest.fn(),
   }),
 }))
 
