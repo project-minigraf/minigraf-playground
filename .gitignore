@@ -41,3 +41,11 @@ next-env.d.ts
 api-keys.txt
 .codex
 .worktrees
+
+.claude/
+.mcp.json
+.opencode/
+memory.graph
+skills/
+
+
