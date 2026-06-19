@@ -8,13 +8,14 @@ const QueryEditor = dynamic(
   { ssr: false }
 )
 import { ResultsPanel } from '@/components/results/ResultsPanel'
-import { LessonSidebar } from '@/components/lessons/LessonSidebar'
+import { TutorialSidebar } from '@/components/lessons/TutorialSidebar'
 import { SettingsDrawer } from '@/components/settings/SettingsDrawer'
 import { ChatPanel } from '@/components/chat/ChatPanel'
 import { getSessionPrefs, setSessionPrefs, clearAllChatHistory } from '@/lib/storage'
 import { buildSystemPrompt } from '@/lib/system-prompt'
 import { useMinigraf } from '@/hooks/useMinigraf'
 import { useLesson } from '@/hooks/useLesson'
+import { useTutorial } from '@/hooks/useTutorial'
 import { buildNarratePayload, buildTutorContext } from '@/lib/tutor'
 import type { QueryResult, SessionPrefs } from '@/lib/types'
 import { decodeQuery } from '@/lib/share'
@@ -27,12 +28,6 @@ type MobileTab = 'editor' | 'results' | 'chat'
 // Strict Mode's mount/unmount/remount cycle does not lose the original hash value.
 const INITIAL_SHARE_HASH = typeof window !== 'undefined' ? window.location.hash : ''
 
-const LESSON_INTROS: Record<string, { lessonTitle: string; lessonGoals: string; currentStep?: string }> = {
-  'lesson-1': { lessonTitle: 'Basic Facts and Queries', lessonGoals: 'asserting and retracting facts, running basic Datalog queries, and reading query results' },
-  'lesson-2': { lessonTitle: 'Rules and Inference', lessonGoals: 'defining rules to derive new facts, and using recursive rules for graph traversal' },
-  'lesson-3': { lessonTitle: 'Recursive Rules', lessonGoals: 'writing fixed-point recursive rules and understanding semi-naive evaluation' },
-  'lesson-4': { lessonTitle: 'Bi-temporal Time Travel', lessonGoals: 'valid-time and transaction-time axes, backdating facts, and querying historical snapshots' },
-}
 
 const DEFAULT_CODE = `(transact [[:alice :friend :bob]
            [:bob :friend :charlie]])
@@ -42,12 +37,11 @@ const DEFAULT_CODE = `(transact [[:alice :friend :bob]
 
 export function AppShell() {
   const [mode, setMode] = useState<Mode>('sandbox')
-  const [activeLessonId, setActiveLessonId] = useState<string | null>(null)
+  const [activeTutorialId, setActiveTutorialIdState] = useState<string | null>(null)
   const [lessonStepGoal, setLessonStepGoal] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [leftWidthPct, setLeftWidthPct] = useState(66)
   const [editorValue, setEditorValue] = useState(DEFAULT_CODE)
-  const [completedStepsPerLesson, setCompletedStepsPerLesson] = useState<Record<string, string[]>>({})
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null)
   const [queryError, setQueryError] = useState<string | null>(null)
   const [lastQuery, setLastQuery] = useState<string>('')
@@ -88,12 +82,8 @@ export function AppShell() {
       if (!hashAppliedRef.current) {
         if (prefs?.mode) {
           setMode(prefs.mode)
-          if (prefs.mode === 'lessons' && prefs.activeLessonId) {
-            setActiveLessonId(prefs.activeLessonId)
-          } else if (prefs.mode === 'lessons') {
-            setActiveLessonId('lesson-1')
-          }
         }
+        setActiveTutorialIdState(prefs?.activeTutorialId ?? 'basic-datalog')
       }
       setSessionPrefsState(prefs)
       setPrefsLoaded(true)
@@ -119,16 +109,15 @@ export function AppShell() {
     })
   }, [])
 
+  const tutorialManager = useTutorial(activeTutorialId)
+  const { activeLessonId, completedStepsPerLesson } = tutorialManager
+  const { status, error: wasmError, query } = useMinigraf(
+    mode === 'lessons' ? (tutorialManager.activeTutorial?.id ?? 'sandbox') : 'sandbox'
+  )
+  const lessonRunner = useLesson(mode === 'lessons' ? activeLessonId : null)
+
   const handleModeChange = useCallback(async (m: Mode) => {
     setMode(m)
-    const nextActiveLessonId =
-      m === 'lessons'
-        ? (activeLessonId ?? sessionPrefs?.activeLessonId ?? 'lesson-1')
-        : undefined
-
-    if (m === 'lessons' && !activeLessonId) {
-      setActiveLessonId(nextActiveLessonId ?? 'lesson-1')
-    }
     if (m !== 'lessons') {
       setLessonStepGoal(null)
     }
@@ -137,21 +126,26 @@ export function AppShell() {
       provider: sessionPrefs?.provider ?? 'groq',
       model: sessionPrefs?.model ?? 'llama-3.3-70b-versatile',
       mode: m,
-      ...(nextActiveLessonId ? { activeLessonId: nextActiveLessonId } : {}),
+      activeLessonId: tutorialManager.activeLessonId ?? undefined,
+      activeTutorialId: tutorialManager.activeTutorial?.id ?? undefined,
     }
     await setSessionPrefs(prefs)
-  }, [activeLessonId, sessionPrefs])
+  }, [tutorialManager, sessionPrefs])
 
   const handleActiveLessonChange = useCallback(async (id: string) => {
-    setActiveLessonId(id)
+    tutorialManager.setActiveLessonId(id)
     setLessonStepGoal(null)
     setTutorPayload(null)
-    const prefs: SessionPrefs = { provider: sessionPrefs?.provider ?? 'groq', model: sessionPrefs?.model ?? '', mode, activeLessonId: id }
+    const prefs: SessionPrefs = {
+      provider: sessionPrefs?.provider ?? 'groq',
+      model: sessionPrefs?.model ?? '',
+      mode,
+      activeLessonId: id,
+      activeTutorialId: tutorialManager.activeTutorial?.id ?? undefined,
+    }
     await setSessionPrefs(prefs)
-  }, [sessionPrefs, mode])
+  }, [tutorialManager, sessionPrefs, mode])
 
-  const { status, error: wasmError, query } = useMinigraf()
-  const lessonRunner = useLesson(mode === 'lessons' ? activeLessonId : null)
   const [lessonReady, setLessonReady] = useState(false)
 
   useEffect(() => {
@@ -178,13 +172,13 @@ export function AppShell() {
   }, [lessonIntroTrigger])
 
   useEffect(() => {
-    if (activeLessonId) {
-      setCompletedStepsPerLesson((prev) => ({
+    if (activeLessonId && lessonRunner.completedSteps.length > 0) {
+      tutorialManager.setCompletedStepsPerLesson((prev) => ({
         ...prev,
         [activeLessonId]: lessonRunner.completedSteps,
       }))
     }
-  }, [activeLessonId, lessonRunner.completedSteps])
+  }, [activeLessonId, lessonRunner.completedSteps]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleResult = useCallback(async (result: QueryResult, queryCode?: string) => {
     setQueryResult(result)
@@ -276,12 +270,15 @@ export function AppShell() {
         {/* Lesson sidebar - lessons mode only, hidden on mobile */}
         {mode === 'lessons' && (
           <div className="hidden md:contents">
-            <LessonSidebar
+            <TutorialSidebar
+              activeTutorial={tutorialManager.activeTutorial}
               activeLessonId={activeLessonId}
               completedStepsPerLesson={completedStepsPerLesson}
               currentStepIndex={lessonRunner.stepIndex}
               totalSteps={lessonRunner.totalSteps}
-              onSelect={handleActiveLessonChange}
+              isUnlocked={tutorialManager.isUnlocked}
+              onSelectLesson={handleActiveLessonChange}
+              onSwitchTutorial={tutorialManager.switchTutorial}
             />
           </div>
         )}
@@ -334,8 +331,9 @@ export function AppShell() {
               progress: lessonRunner.completedSteps
             })}
             tutorPayload={tutorPayload}
-            introContext={mode === 'lessons' && activeLessonId ? {
-              ...LESSON_INTROS[activeLessonId],
+            introContext={mode === 'lessons' && activeLessonId && tutorialManager.activeTutorial ? {
+              lessonTitle: lessonRunner.lesson?.title ?? '',
+              lessonGoals: tutorialManager.activeTutorial.goals,
               currentStep: lessonRunner.currentStep?.instruction ?? undefined,
               completedOpenStep: pendingOpenStepContext ?? undefined,
             } : undefined}

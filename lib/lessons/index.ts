@@ -1,7 +1,14 @@
-import type { Lesson } from '@/lib/types'
-import { lesson1 } from './lesson-1'
-import { lesson2 } from './lesson-2'
-import { lesson3 } from './lesson-3'
-import { lesson4 } from './lesson-4'
+import type { Tutorial } from '@/lib/types'
+import { tutorialBasicDatalog } from './tutorial-basic-datalog'
+import { tutorialMarketplace } from './tutorial-marketplace'
+import { tutorialOrgChart } from './tutorial-org-chart'
+import { tutorialSportsLeague } from './tutorial-sports-league'
+import { tutorialTransit } from './tutorial-transit'
 
-export const LESSONS: Lesson[] = [lesson1, lesson2, lesson3, lesson4]
+export const TUTORIALS: Tutorial[] = [
+  tutorialBasicDatalog,
+  tutorialMarketplace,
+  tutorialOrgChart,
+  tutorialSportsLeague,
+  tutorialTransit,
+]

@@ -3,7 +3,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import type { LessonStep } from '@/lib/types'
 
 const setSessionPrefsMock = jest.fn().mockResolvedValue(undefined)
-const lessonSidebarSpy = jest.fn(() => <div>LessonSidebar</div>)
+const lessonSidebarSpy = jest.fn(() => <div>TutorialSidebar</div>)
 
 let mockLessonRunner: {
   lesson: { id: string; title: string; description: string; steps: { id: string }[] }
@@ -54,8 +54,8 @@ jest.mock('@/components/results/ResultsPanel', () => ({
   ResultsPanel: () => <div>ResultsPanel</div>,
 }))
 
-jest.mock('@/components/lessons/LessonSidebar', () => ({
-  LessonSidebar: (props: unknown) => lessonSidebarSpy(props),
+jest.mock('@/components/lessons/TutorialSidebar', () => ({
+  TutorialSidebar: (props: unknown) => lessonSidebarSpy(props),
 }))
 
 jest.mock('@/components/settings/SettingsDrawer', () => ({
@@ -79,10 +79,22 @@ jest.mock('@/lib/storage', () => ({
 }))
 
 jest.mock('@/hooks/useMinigraf', () => ({
-  useMinigraf: () => ({
+  useMinigraf: (_tutorialId: string) => ({
     status: 'ready',
     error: null,
     query: jest.fn(),
+  }),
+}))
+
+jest.mock('@/hooks/useTutorial', () => ({
+  useTutorial: () => ({
+    activeTutorial: { id: 'basic-datalog', title: 'Basic Datalog', goals: 'asserting facts, querying, rules', lessons: [] },
+    activeLessonId: 'lesson-1',
+    setActiveLessonId: jest.fn(),
+    switchTutorial: jest.fn(),
+    isUnlocked: () => true,
+    completedStepsPerLesson: {},
+    setCompletedStepsPerLesson: jest.fn(),
   }),
 }))
 

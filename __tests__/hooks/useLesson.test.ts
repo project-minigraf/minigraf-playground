@@ -6,26 +6,34 @@ beforeEach(() => {
 })
 
 jest.mock('@/lib/lessons', () => ({
-  LESSONS: [
+  TUTORIALS: [
     {
-      id: 'test-lesson',
-      title: 'Test',
-      description: 'Test lesson',
-      steps: [
+      id: 'test-tutorial',
+      title: 'Test Tutorial',
+      description: '',
+      goals: '',
+      lessons: [
         {
-          id: 'step-1',
-          instruction: 'Step 1',
-          starterCode: 'friend(alice, bob).',
-          expectedResult: { columns: ['?x'], rows: [['bob']] },
-          hints: [],
-          successMessage: 'Great!',
-        },
-        {
-          id: 'step-2',
-          instruction: 'Step 2',
-          starterCode: '',
-          hints: [],
-          successMessage: 'Done!',
+          id: 'test-lesson',
+          title: 'Test',
+          description: 'Test lesson',
+          steps: [
+            {
+              id: 'step-1',
+              instruction: 'Step 1',
+              starterCode: 'friend(alice, bob).',
+              expectedResult: { columns: ['?x'], rows: [['bob']] },
+              hints: [],
+              successMessage: 'Great!',
+            },
+            {
+              id: 'step-2',
+              instruction: 'Step 2',
+              starterCode: '',
+              hints: [],
+              successMessage: 'Done!',
+            },
+          ],
         },
       ],
     },

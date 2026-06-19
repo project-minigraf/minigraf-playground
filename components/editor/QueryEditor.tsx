@@ -35,7 +35,7 @@ interface QueryEditorProps {
 }
 
 export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorProps) {
-  const { status, error: wasmError, query } = useMinigraf()
+  const { status, error: wasmError, query } = useMinigraf('sandbox')
   const [queryError, setQueryError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const viewRef = useRef<EditorView | null>(null)

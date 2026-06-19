@@ -1,6 +1,6 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
-import { LESSONS } from '@/lib/lessons'
+import { TUTORIALS } from '@/lib/lessons'
 import { getLessonProgress, setLessonProgress } from '@/lib/storage'
 import { computeDiff } from '@/lib/tutor'
 import type { Lesson, LessonStep, QueryResult } from '@/lib/types'
@@ -12,7 +12,7 @@ export function useLesson(lessonId: string | null) {
 
   useEffect(() => {
     if (!lessonId) return
-    const found = LESSONS.find((l) => l.id === lessonId) ?? null
+    const found = TUTORIALS.flatMap((t) => t.lessons).find((l) => l.id === lessonId) ?? null
     setLesson(found)
     getLessonProgress(lessonId).then((p) => {
       const completed = p?.completedSteps ?? []
