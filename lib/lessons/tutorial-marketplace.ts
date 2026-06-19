@@ -502,11 +502,113 @@ This step is open-ended — the tutor will give feedback.`,
   ],
 }
 
+const lesson4: Lesson = {
+  id: 'marketplace-4',
+  title: 'Negation across sellers',
+  description: 'Use not and not-join to find products, sellers, and customers defined by the absence of a relationship.',
+  steps: [
+    {
+      id: 'm4-s1',
+      instruction: `## Step 1: Products not listed by TechSource
+
+\`not-join\` excludes outer bindings when a sub-pattern can be satisfied. Here: for each product, check whether there EXISTS a listing entity that links it to \`:techsource\`. If one exists, exclude that product.
+
+The join variable \`[?product]\` is shared with the outer query; \`?listing\` is private to the \`not-join\` body.`,
+      starterCode: `${SETUP}
+
+(query [:find ?product-name
+        :where [?product :product/name ?product-name]
+               (not-join [?product]
+                         [?listing :listing/product ?product]
+                         [?listing :listing/seller :techsource])])`,
+      expectedResult: {
+        columns: ['?product-name'],
+        rows: [['PhoneX 12'], ['USB-C Cable']],
+      },
+      hints: [
+        'TechSource lists laptop-pro, nc-headphones, and keyboard-k1 — those three are excluded.',
+        '`not-join` is needed (rather than plain `not`) because `?listing` is a fresh inner variable not bound by any outer clause.',
+      ],
+      successMessage: 'PhoneX 12 and USB-C Cable have no TechSource listing — correctly excluded.',
+    },
+    {
+      id: 'm4-s2',
+      instruction: `## Step 2: Sellers with no delivered orders
+
+Plain \`not\` excludes a binding when a pattern matches it. All variables inside the \`not\` body must already be bound by outer clauses.
+
+Find every seller, then exclude any whose entity appears in a delivered order.`,
+      starterCode: `${SETUP}
+
+(query [:find ?seller-name
+        :where [?seller :seller/name ?seller-name]
+               (not [?order :order/seller ?seller]
+                    [?order :order/status :delivered])])`,
+      expectedResult: {
+        columns: ['?seller-name'],
+        rows: [['GadgetHaus']],
+      },
+      hints: [
+        'Corestore Direct has order-a1 (:delivered) and TechSource has order-b1 (:delivered) — both are excluded.',
+        'GadgetHaus only has order-c1 (:placed) — no delivered order exists, so it survives.',
+      ],
+      successMessage: 'GadgetHaus is the only seller with no fulfilled orders yet.',
+    },
+    {
+      id: 'm4-s3',
+      instruction: `## Step 3: Products listed by Corestore Direct but not GadgetHaus
+
+Chain two patterns: first require a Corestore listing to exist for the product, then use \`not-join\` to exclude products that also have a GadgetHaus listing.
+
+GadgetHaus only lists PhoneX 12, so that product is the one removed.`,
+      starterCode: `${SETUP}
+
+(query [:find ?product-name
+        :where [?product :product/name ?product-name]
+               [?cd-listing :listing/product ?product]
+               [?cd-listing :listing/seller :corestore-direct]
+               (not-join [?product]
+                         [?gh-listing :listing/product ?product]
+                         [?gh-listing :listing/seller :gadgethaus])])`,
+      expectedResult: {
+        columns: ['?product-name'],
+        rows: [['LaptopPro 15'], ['NoiseCancel Pro'], ['USB-C Cable']],
+      },
+      hints: [
+        'The outer clause `[?cd-listing :listing/seller :corestore-direct]` limits to Corestore products first: laptop-pro, phone-x, nc-headphones, usb-cable.',
+        'The `not-join` then removes phone-x (GadgetHaus has a listing for it), leaving three products.',
+      ],
+      successMessage: 'Three products are exclusive to Corestore Direct vs GadgetHaus.',
+    },
+    {
+      id: 'm4-s4',
+      instruction: `## Step 4: Customers with no placed orders
+
+Write a query that finds customers who have no order in the \`:placed\` status — either all their orders are delivered or they haven't placed anything.
+
+This step is open-ended — the tutor will give feedback.`,
+      starterCode: `${SETUP}
+
+; Find customers with no placed orders
+(query [:find ?customer-name
+        :where [?customer :customer/name ?customer-name]
+               (not-join [?customer]
+                         [?order :order/customer ?customer]
+                         [?order :order/status :placed])])`,
+      hints: [
+        'Alice has a placed order (order-a2) and Clara has order-c1 (:placed) — both should be excluded.',
+        'Ben only has order-b1 (:delivered) — he has no placed order so he survives.',
+      ],
+      successMessage: 'You used not-join to find customers defined by the absence of a relationship.',
+    },
+  ],
+}
+
 export const tutorialMarketplace: Tutorial = {
   id: 'marketplace',
   title: 'Corestore Marketplace',
   description: 'Model a multi-seller e-commerce platform with temporal price tracking.',
   goals: 'multi-seller joins, temporal price comparison, aggregates per seller, negation, and disjunction',
   prerequisiteTutorialId: 'basic-datalog',
-  lessons: [lesson1, lesson2, lesson3],
+  lessons: [lesson1, lesson2, lesson3, lesson4],
 }
