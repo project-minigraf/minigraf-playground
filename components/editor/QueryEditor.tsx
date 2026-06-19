@@ -16,7 +16,7 @@ const errorLineField = StateField.define<DecorationSet>({
   update(deco, tr) {
     for (const e of tr.effects) {
       if (e.is(clearErrorLine)) return Decoration.none
-      if (e.is(addErrorLine)) {
+      if (e.is(addErrorLine) && e.value >= 1 && e.value <= tr.state.doc.lines) {
         const line = tr.state.doc.line(e.value)
         return Decoration.set([Decoration.line({ class: 'cm-error-line' }).range(line.from)])
       }
