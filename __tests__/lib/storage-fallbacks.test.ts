@@ -1,7 +1,4 @@
-jest.mock('idb', () => ({
-  openDB: jest.fn().mockRejectedValue(new Error('IDB unavailable')),
-}))
-
+import * as idb from 'idb'
 import {
   getGraphState, setGraphState,
   getSessionPrefs, setSessionPrefs,
@@ -11,6 +8,16 @@ import {
 } from '@/lib/storage'
 
 describe('IndexedDB failure fallbacks', () => {
+  let openDBSpy: jest.SpyInstance
+
+  beforeEach(() => {
+    openDBSpy = jest.spyOn(idb, 'openDB').mockRejectedValue(new Error('IDB unavailable'))
+  })
+
+  afterEach(() => {
+    openDBSpy.mockRestore()
+  })
+
   it('getGraphState returns null when DB is unavailable', async () => {
     expect(await getGraphState()).toBeNull()
   })
