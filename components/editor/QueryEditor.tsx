@@ -1,10 +1,30 @@
 'use client'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
-import { EditorView } from '@codemirror/view'
+import { Decoration, type DecorationSet, EditorView } from '@codemirror/view'
+import { StateEffect, StateField } from '@codemirror/state'
 import { datalogLanguage } from './datalog-lang'
 import { useMinigraf } from '@/hooks/useMinigraf'
 import type { QueryResult } from '@/lib/types'
+
+// CodeMirror state machinery for error line highlighting
+const addErrorLine = StateEffect.define<number>()   // 1-based line number
+const clearErrorLine = StateEffect.define<null>()
+
+const errorLineField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update(deco, tr) {
+    for (const e of tr.effects) {
+      if (e.is(clearErrorLine)) return Decoration.none
+      if (e.is(addErrorLine)) {
+        const line = tr.state.doc.line(e.value)
+        return Decoration.set([Decoration.line({ class: 'cm-error-line' }).range(line.from)])
+      }
+    }
+    return tr.docChanged ? deco.map(tr.changes) : deco
+  },
+  provide: (f) => EditorView.decorations.from(f),
+})
 
 interface QueryEditorProps {
   value: string
@@ -16,6 +36,7 @@ interface QueryEditorProps {
 export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorProps) {
   const { status, error: wasmError, query } = useMinigraf()
   const [queryError, setQueryError] = useState<string | null>(null)
+  const viewRef = useRef<EditorView | null>(null)
 
   const handleRun = useCallback(async () => {
     setQueryError(null)
@@ -41,6 +62,19 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
     onChange(val)
   }, [onChange])
 
+  // Dispatch error line highlight / clear whenever queryError changes
+  useEffect(() => {
+    if (!viewRef.current) return
+    if (queryError) {
+      const match = /line (\d+)/i.exec(queryError)
+      if (match) {
+        viewRef.current.dispatch({ effects: addErrorLine.of(Number(match[1])) })
+      }
+    } else {
+      viewRef.current.dispatch({ effects: clearErrorLine.of(null) })
+    }
+  }, [queryError])
+
   const displayError = queryError || wasmError
 
   const isReady = status === 'ready'
@@ -52,7 +86,7 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
         <CodeMirror
           value={value}
           onChange={handleChange}
-          extensions={[datalogLanguage]}
+          extensions={[datalogLanguage, errorLineField]}
           theme="dark"
           className="h-full text-sm"
           basicSetup={{
@@ -61,6 +95,7 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
             foldGutter: false,
           }}
           onCreateEditor={(view: EditorView) => {
+            viewRef.current = view
             view.scrollDOM.addEventListener('keydown', handleKeyDown)
           }}
         />

@@ -25,3 +25,7 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
+
+.cm-error-line {
+  background: rgba(239, 68, 68, 0.15);
+}
