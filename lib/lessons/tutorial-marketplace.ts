@@ -604,11 +604,133 @@ This step is open-ended — the tutor will give feedback.`,
   ],
 }
 
+const lesson5: Lesson = {
+  id: 'marketplace-5',
+  title: 'Disjunction and synthesis',
+  description: 'Use or and or-join to match across seller alternatives, then combine with negation in a single synthesis query.',
+  steps: [
+    {
+      id: 'm5-s1',
+      instruction: `## Step 1: Orders from Corestore Direct OR GadgetHaus
+
+\`or\` unions the results of multiple branches. Both branches here match on \`:order/seller\`, so a plain \`or\` (not \`or-join\`) works — all branches bind the same variables.
+
+TechSource orders are excluded because neither branch matches \`:techsource\`.`,
+      starterCode: `${SETUP}
+
+(query [:find ?customer-name ?seller-name ?status
+        :where [?order :order/customer ?cust]
+               [?cust :customer/name ?customer-name]
+               [?order :order/seller ?seller]
+               [?seller :seller/name ?seller-name]
+               [?order :order/status ?status]
+               (or [?order :order/seller :corestore-direct]
+                   [?order :order/seller :gadgethaus])])`,
+      expectedResult: {
+        columns: ['?customer-name', '?seller-name', '?status'],
+        rows: [
+          ['Alice', 'Corestore Direct', ':delivered'],
+          ['Alice', 'Corestore Direct', ':placed'],
+          ['Clara', 'GadgetHaus', ':placed'],
+        ],
+      },
+      hints: [
+        'The `or` clause is evaluated after the other patterns — `?order` is already bound, so each branch is tested against it.',
+        'Ben\'s TechSource order matches neither branch and is excluded from the union.',
+      ],
+      successMessage: "Three orders from Corestore Direct and GadgetHaus — Ben's TechSource order excluded.",
+    },
+    {
+      id: 'm5-s2',
+      instruction: `## Step 2: Define a \`marketplace-seller\` rule
+
+Define a rule that identifies third-party sellers (TechSource or GadgetHaus) using \`or\` in the rule body. Then query all orders placed through a marketplace seller.`,
+      starterCode: `${SETUP}
+
+(rule [(marketplace-seller ?seller)
+       (or [?seller :seller/name "TechSource"]
+           [?seller :seller/name "GadgetHaus"])])
+
+(query [:find ?customer-name ?seller-name
+        :where (marketplace-seller ?seller)
+               [?seller :seller/name ?seller-name]
+               [?order :order/seller ?seller]
+               [?order :order/customer ?cust]
+               [?cust :customer/name ?customer-name]])`,
+      expectedResult: {
+        columns: ['?customer-name', '?seller-name'],
+        rows: [
+          ['Ben', 'TechSource'],
+          ['Clara', 'GadgetHaus'],
+        ],
+      },
+      hints: [
+        'The rule head `(marketplace-seller ?seller)` is a derived predicate — query it like a base triple pattern.',
+        'Rules are not persisted in the WASM instance across resets; the `rule` form must appear in the same code block as the `query`.',
+      ],
+      successMessage: 'Rule with disjunction working — both marketplace orders retrieved.',
+    },
+    {
+      id: 'm5-s3',
+      instruction: `## Step 3: Combine negation and disjunction
+
+Find orders from Corestore Direct OR GadgetHaus that have NOT yet been delivered. This combines \`or\` (for the seller alternatives) and \`not\` (for the status absence) in a single \`:where\` clause.`,
+      starterCode: `${SETUP}
+
+(query [:find ?customer-name ?seller-name ?status
+        :where [?order :order/customer ?cust]
+               [?cust :customer/name ?customer-name]
+               [?order :order/seller ?seller]
+               [?seller :seller/name ?seller-name]
+               [?order :order/status ?status]
+               (or [?order :order/seller :corestore-direct]
+                   [?order :order/seller :gadgethaus])
+               (not [?order :order/status :delivered])])`,
+      expectedResult: {
+        columns: ['?customer-name', '?seller-name', '?status'],
+        rows: [
+          ['Alice', 'Corestore Direct', ':placed'],
+          ['Clara', 'GadgetHaus', ':placed'],
+        ],
+      },
+      hints: [
+        'order-a1 (Alice × Corestore Direct × :delivered) is excluded by the `not` clause even though it matches the `or`.',
+        '`or` and `not` are independent clauses in `:where` — they both apply to every candidate binding.',
+      ],
+      successMessage: 'Two pending orders surfaced by combining disjunction and negation in one query.',
+    },
+    {
+      id: 'm5-s4',
+      instruction: `## Step 4: Use or-join across different attributes
+
+\`or-join\` is needed when branches bind different variables. Find customers who have EITHER a placed order OR an order item priced above 1,000 — these two conditions use different intermediate variables (\`?order\` for status, \`?item\` for price), so plain \`or\` cannot be used.
+
+This step is open-ended — the tutor will give feedback.`,
+      starterCode: `${SETUP}
+
+(query [:find ?customer-name
+        :where [?customer :customer/name ?customer-name]
+               (or-join [?customer]
+                 (and [?order :order/customer ?customer]
+                      [?order :order/status :placed])
+                 (and [?order :order/customer ?customer]
+                      [?item :item/order ?order]
+                      [?item :item/price ?price]
+                      [(> ?price 1000)]))])`,
+      hints: [
+        'Branch 1 binds `?order` and checks `:placed`; Branch 2 binds `?order`, `?item`, and `?price` to check the price threshold — different variable sets require `or-join`.',
+        'Alice qualifies via both branches (placed order + laptop > 1000); Ben via the price branch only; Clara via the placed branch only.',
+      ],
+      successMessage: 'You used or-join to combine conditions that bind different intermediate variables.',
+    },
+  ],
+}
+
 export const tutorialMarketplace: Tutorial = {
   id: 'marketplace',
   title: 'Corestore Marketplace',
   description: 'Model a multi-seller e-commerce platform with temporal price tracking.',
   goals: 'multi-seller joins, temporal price comparison, aggregates per seller, negation, and disjunction',
   prerequisiteTutorialId: 'basic-datalog',
-  lessons: [lesson1, lesson2, lesson3, lesson4],
+  lessons: [lesson1, lesson2, lesson3, lesson4, lesson5],
 }

@@ -111,4 +111,31 @@ describe('marketplace tutorial', () => {
       expect(marketplace.lessons.find((l) => l.id === 'marketplace-4')!.steps[3].expectedResult).toBeUndefined()
     })
   })
+
+  describe('lesson 5 — disjunction and synthesis', () => {
+    it('exists with correct id', () => {
+      expect(marketplace.lessons.find((l) => l.id === 'marketplace-5')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(marketplace.lessons.find((l) => l.id === 'marketplace-5')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      marketplace.lessons.find((l) => l.id === 'marketplace-5')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(marketplace.lessons.find((l) => l.id === 'marketplace-5')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
+
+  // Final structural tests — pass only once all 5 lessons are present
+  it('has exactly 5 lessons', () => {
+    expect(marketplace.lessons).toHaveLength(5)
+  })
+
+  it('step IDs are unique within marketplace tutorial', () => {
+    const ids = marketplace.lessons.flatMap((l) => l.steps.map((s) => s.id))
+    expect(ids.length).toBe(new Set(ids).size)
+  })
 })
