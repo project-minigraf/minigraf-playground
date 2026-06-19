@@ -19,6 +19,8 @@ import { buildNarratePayload, buildTutorContext } from '@/lib/tutor'
 import type { QueryResult, SessionPrefs } from '@/lib/types'
 
 type Mode = 'sandbox' | 'lessons'
+type MobileTab = 'editor' | 'results' | 'chat'
+
 
 const LESSON_INTROS: Record<string, { lessonTitle: string; lessonGoals: string; currentStep?: string }> = {
   'lesson-1': { lessonTitle: 'Basic Facts and Queries', lessonGoals: 'asserting and retracting facts, running basic Datalog queries, and reading query results' },
@@ -48,6 +50,15 @@ export function AppShell() {
   const [sessionPrefs, setSessionPrefsState] = useState<SessionPrefs | null>(null)
   const [prefsLoaded, setPrefsLoaded] = useState(false)
   const [pendingOpenStepContext, setPendingOpenStepContext] = useState<{ instruction: string; code: string } | null>(null)
+  const [mobileTab, setMobileTab] = useState<MobileTab>('editor')
+  const [isDesktop, setIsDesktop] = useState(true)
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   useEffect(() => {
     getSessionPrefs().then((prefs) => {
@@ -215,22 +226,45 @@ export function AppShell() {
         onModeChange={handleModeChange}
         onSettingsOpen={() => setSettingsOpen(true)}
       />
+
+      {/* Mobile: lesson step indicator */}
+      {mode === 'lessons' && lessonRunner.currentStep && (
+        <div className="md:hidden px-3 py-1.5 border-b border-gray-800 text-xs text-gray-500 truncate shrink-0">
+          Step {lessonRunner.stepIndex + 1}/{lessonRunner.totalSteps}: {lessonRunner.currentStep.instruction.split('\n')[0].replace(/^#+\s*/, '')}
+        </div>
+      )}
+
+      {/* Mobile: tab bar */}
+      <div className="flex md:hidden border-b border-gray-800 shrink-0">
+        {(['editor', 'results', 'chat'] as MobileTab[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setMobileTab(t)}
+            className={`flex-1 py-2 text-xs capitalize ${mobileTab === t ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-500'}`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
       <div className="flex-1 flex overflow-hidden">
-        {/* Lesson sidebar - lessons mode only */}
+        {/* Lesson sidebar - lessons mode only, hidden on mobile */}
         {mode === 'lessons' && (
-          <LessonSidebar
-            activeLessonId={activeLessonId}
-            completedStepsPerLesson={completedStepsPerLesson}
-            currentStepIndex={lessonRunner.stepIndex}
-            totalSteps={lessonRunner.totalSteps}
-            onSelect={handleActiveLessonChange}
-          />
+          <div className="hidden md:contents">
+            <LessonSidebar
+              activeLessonId={activeLessonId}
+              completedStepsPerLesson={completedStepsPerLesson}
+              currentStepIndex={lessonRunner.stepIndex}
+              totalSteps={lessonRunner.totalSteps}
+              onSelect={handleActiveLessonChange}
+            />
+          </div>
         )}
 
-        {/* Left panel */}
+        {/* Left panel (editor + results) */}
         <div
-          className="flex flex-col overflow-hidden"
-          style={{ width: `${leftWidthPct}%` }}
+          className={`flex flex-col overflow-hidden ${mobileTab === 'chat' ? 'hidden md:flex' : 'flex'}`}
+          style={isDesktop ? { width: `${leftWidthPct}%` } : undefined}
         >
           {/* WASM status banners */}
           {status === 'loading' && (
@@ -244,8 +278,8 @@ export function AppShell() {
               <button onClick={() => window.location.reload()} className="underline hover:text-red-200">Reload</button>
             </div>
           )}
-          {/* Editor */}
-          <div className="flex-1 overflow-hidden">
+          {/* Editor — hidden on mobile results tab */}
+          <div className={`${mobileTab === 'results' ? 'hidden md:flex' : 'flex'} flex-1 overflow-hidden`}>
             <QueryEditor
               value={editorValue}
               onChange={setEditorValue}
@@ -253,23 +287,25 @@ export function AppShell() {
               onError={handleError}
             />
           </div>
-          {/* Results */}
-          <div className="h-1/2 border-t border-gray-200 dark:border-gray-800 overflow-hidden">
+          {/* Results — hidden on mobile editor tab; full height on mobile results tab */}
+          <div className={`${mobileTab === 'editor' ? 'hidden md:block' : 'block'} ${mobileTab === 'results' ? 'flex-1 md:flex-none' : ''} md:h-1/2 border-t border-gray-200 dark:border-gray-800 overflow-hidden`}>
             <ResultsPanel result={queryResult} error={queryError} query={lastQuery} />
           </div>
         </div>
 
-        {/* Resize handle */}
-        <ResizeHandle onResize={handleResize} />
+        {/* Resize handle — hidden on mobile */}
+        <div className="hidden md:flex">
+          <ResizeHandle onResize={handleResize} />
+        </div>
 
         {/* Right panel - Chat */}
-        <div className="flex-1 overflow-hidden">
+        <div className={`${mobileTab !== 'chat' ? 'hidden md:flex' : 'flex'} flex-1 overflow-hidden`}>
           <ChatPanel
             chatKey={mode === 'lessons' ? (activeLessonId ?? 'sandbox') : 'sandbox'}
             provider={sessionPrefs?.provider ?? 'groq'}
             model={sessionPrefs?.model ?? 'llama-3.3-70b-versatile'}
-            systemPrompt={buildSystemPrompt({ 
-              lessonStepGoal: lessonRunner.currentStep?.instruction ?? lessonStepGoal, 
+            systemPrompt={buildSystemPrompt({
+              lessonStepGoal: lessonRunner.currentStep?.instruction ?? lessonStepGoal,
               progress: lessonRunner.completedSteps
             })}
             tutorPayload={tutorPayload}
