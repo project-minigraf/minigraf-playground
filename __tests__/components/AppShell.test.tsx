@@ -3,7 +3,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import type { LessonStep } from '@/lib/types'
 
 const setSessionPrefsMock = jest.fn().mockResolvedValue(undefined)
-const lessonSidebarSpy = jest.fn(() => <div>LessonSidebar</div>)
+const lessonSidebarSpy = jest.fn(() => <div>TutorialSidebar</div>)
 
 let mockLessonRunner: {
   lesson: { id: string; title: string; description: string; steps: { id: string }[] }
@@ -54,8 +54,8 @@ jest.mock('@/components/results/ResultsPanel', () => ({
   ResultsPanel: () => <div>ResultsPanel</div>,
 }))
 
-jest.mock('@/components/lessons/LessonSidebar', () => ({
-  LessonSidebar: (props: unknown) => lessonSidebarSpy(props),
+jest.mock('@/components/lessons/TutorialSidebar', () => ({
+  TutorialSidebar: (props: unknown) => lessonSidebarSpy(props),
 }))
 
 jest.mock('@/components/settings/SettingsDrawer', () => ({

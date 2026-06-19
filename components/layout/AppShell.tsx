@@ -8,7 +8,7 @@ const QueryEditor = dynamic(
   { ssr: false }
 )
 import { ResultsPanel } from '@/components/results/ResultsPanel'
-import { LessonSidebar } from '@/components/lessons/LessonSidebar'
+import { TutorialSidebar } from '@/components/lessons/TutorialSidebar'
 import { SettingsDrawer } from '@/components/settings/SettingsDrawer'
 import { ChatPanel } from '@/components/chat/ChatPanel'
 import { getSessionPrefs, setSessionPrefs, clearAllChatHistory } from '@/lib/storage'
@@ -276,12 +276,15 @@ export function AppShell() {
         {/* Lesson sidebar - lessons mode only, hidden on mobile */}
         {mode === 'lessons' && (
           <div className="hidden md:contents">
-            <LessonSidebar
+            <TutorialSidebar
+              activeTutorial={null}
               activeLessonId={activeLessonId}
               completedStepsPerLesson={completedStepsPerLesson}
               currentStepIndex={lessonRunner.stepIndex}
               totalSteps={lessonRunner.totalSteps}
-              onSelect={handleActiveLessonChange}
+              isUnlocked={() => true}
+              onSelectLesson={handleActiveLessonChange}
+              onSwitchTutorial={() => undefined}
             />
           </div>
         )}
