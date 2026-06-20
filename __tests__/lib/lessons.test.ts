@@ -337,3 +337,102 @@ describe('sports league tutorial', () => {
     })
   })
 })
+
+describe('transit tutorial', () => {
+  const transit = TUTORIALS.find((t) => t.id === 'transit')!
+
+  it('has exactly 5 lessons', () => {
+    expect(transit.lessons).toHaveLength(5)
+  })
+
+  it('has unique step IDs across all lessons', () => {
+    const allStepIds = transit.lessons.flatMap((l) => l.steps.map((s) => s.id))
+    const unique = new Set(allStepIds)
+    expect(unique.size).toBe(allStepIds.length)
+  })
+
+  describe('lesson 1 — stations, lines, and stops', () => {
+    it('exists with correct id', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-1')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-1')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      transit.lessons.find((l) => l.id === 'transit-1')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-1')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
+
+  describe('lesson 2 — bi-temporal timetable', () => {
+    it('exists with correct id', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-2')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-2')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      transit.lessons.find((l) => l.id === 'transit-2')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-2')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
+
+  describe('lesson 3 — recursive reachability', () => {
+    it('exists with correct id', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-3')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-3')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      transit.lessons.find((l) => l.id === 'transit-3')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-3')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
+
+  describe('lesson 4 — negation', () => {
+    it('exists with correct id', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-4')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-4')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      transit.lessons.find((l) => l.id === 'transit-4')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-4')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
+
+  describe('lesson 5 — aggregates', () => {
+    it('exists with correct id', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-5')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-5')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      transit.lessons.find((l) => l.id === 'transit-5')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(transit.lessons.find((l) => l.id === 'transit-5')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
+})
