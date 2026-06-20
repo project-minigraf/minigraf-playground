@@ -139,3 +139,24 @@ describe('marketplace tutorial', () => {
     expect(ids.length).toBe(new Set(ids).size)
   })
 })
+
+describe('org chart tutorial', () => {
+  const orgChart = TUTORIALS.find((t) => t.id === 'org-chart')!
+
+  describe('lesson 1 — employee facts and joins', () => {
+    it('exists with correct id', () => {
+      expect(orgChart.lessons.find((l) => l.id === 'org-chart-1')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(orgChart.lessons.find((l) => l.id === 'org-chart-1')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      orgChart.lessons.find((l) => l.id === 'org-chart-1')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(orgChart.lessons.find((l) => l.id === 'org-chart-1')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
+})
