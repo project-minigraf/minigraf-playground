@@ -552,13 +552,118 @@ This step is open-ended — the tutor will give feedback.`,
   ],
 }
 
+const lesson5: Lesson = {
+  id: 'org-chart-5',
+  title: 'Aggregates',
+  description: 'Use count, sum, and max to compute headcount and payroll figures grouped by department.',
+  steps: [
+    {
+      id: 'o5-s1',
+      instruction: `## Step 1: Count employees per department
+
+\`(count ?emp)\` in the \`:find\` clause aggregates the number of distinct employee entities matched for each group of department names.
+
+Because the query joins through \`[?emp :employee/department ?dept]\`, only employees who have a department fact are counted. Alice (CEO) has no \`:employee/department\` and is excluded. Operations and Legal have no employees so they produce no rows.`,
+      starterCode: `${SETUP}
+
+(query [:find ?dept-name (count ?emp)
+        :where [?dept :dept/name ?dept-name]
+               [?emp :employee/department ?dept]])`,
+      expectedResult: {
+        columns: ['?dept-name', '(count ?emp)'],
+        rows: [
+          ['Engineering', '4'],
+          ['Marketing', '1'],
+        ],
+      },
+      hints: [
+        'The inner join `[?emp :employee/department ?dept]` naturally excludes departments with no employees — no matching rows means no group.',
+        'Alice has no `:employee/department` fact, so she contributes to no department count. Only the 4 Engineering employees and 1 Marketing employee appear.',
+      ],
+      successMessage: 'Engineering: 4 employees, Marketing: 1 employee.',
+    },
+    {
+      id: 'o5-s2',
+      instruction: `## Step 2: Total salary per department
+
+\`(sum ?salary)\` sums the salary values for each department group. Bind \`?salary\` with a triple clause before using it in the aggregate.
+
+Engineering has 4 employees: Bob (150,000), Dave (110,000), Eve (85,000), Frank (100,000) → total 445,000. Marketing has Carol (130,000).`,
+      starterCode: `${SETUP}
+
+(query [:find ?dept-name (sum ?salary)
+        :where [?dept :dept/name ?dept-name]
+               [?emp :employee/department ?dept]
+               [?emp :employee/salary ?salary]])`,
+      expectedResult: {
+        columns: ['?dept-name', '(sum ?salary)'],
+        rows: [
+          ['Engineering', '445000'],
+          ['Marketing', '130000'],
+        ],
+      },
+      hints: [
+        'Bind `?salary` with `[?emp :employee/salary ?salary]` before using `(sum ?salary)` — aggregates operate on variables already matched by the `:where` clauses.',
+        'Engineering total: Bob 150,000 + Dave 110,000 + Eve 85,000 + Frank 100,000 = 445,000. Alice is excluded because she has no department fact.',
+      ],
+      successMessage: 'Engineering payroll: 445,000. Marketing payroll: 130,000.',
+    },
+    {
+      id: 'o5-s3',
+      instruction: `## Step 3: Highest salary per department
+
+\`(max ?salary)\` returns the maximum salary value within each department group.
+
+Engineering max is Bob at 150,000. Marketing max is Carol at 130,000.`,
+      starterCode: `${SETUP}
+
+(query [:find ?dept-name (max ?salary)
+        :where [?dept :dept/name ?dept-name]
+               [?emp :employee/department ?dept]
+               [?emp :employee/salary ?salary]])`,
+      expectedResult: {
+        columns: ['?dept-name', '(max ?salary)'],
+        rows: [
+          ['Engineering', '150000'],
+          ['Marketing', '130000'],
+        ],
+      },
+      hints: [
+        '`(max ?salary)` picks the largest value across all rows in each department group, using the same `:where` join as the previous steps.',
+        'Engineering max is Bob\'s 150,000. Marketing has only Carol at 130,000, so the max equals the only value.',
+      ],
+      successMessage: 'Engineering max salary: 150,000 (Bob). Marketing max salary: 130,000 (Carol).',
+    },
+    {
+      id: 'o5-s4',
+      instruction: `## Step 4: Parameterise by department keyword (open-ended)
+
+Instead of relying on the inner-join exclusion to group all departments, filter to a single department using its keyword literal. This lets you compare departments without rewriting the query body — just swap the keyword.
+
+Try computing \`(count ?emp)\` for \`:eng\` by filtering directly with \`[?emp :employee/department :eng]\`. Then swap \`:eng\` for \`:mktg\` to see the Marketing headcount.
+
+This step is open-ended — the tutor will give feedback.`,
+      starterCode: `${SETUP}
+
+; Try filtering by department keyword: [?emp :employee/department :eng]
+; Then compute (count ?emp) — no dept-name join needed
+; Swap :eng for :mktg to compare without rewriting the query`,
+      hints: [
+        'Using a keyword literal like `:eng` in the pattern position `[?emp :employee/department :eng]` fixes the department and lets you aggregate only over that department\'s employees.',
+        'This approach avoids the group-by join entirely — you get a single aggregate value per query. Swap `:eng` for `:mktg` to compare Marketing headcount without touching the rest of the query.',
+      ],
+      successMessage: 'You parameterised an aggregate query by department keyword instead of relying on the join grouping.',
+    },
+  ],
+}
+
 export const tutorialOrgChart: Tutorial = {
   id: 'org-chart',
   title: 'Company Org Chart',
   description: 'Model employees, departments, and reporting lines with retroactive salary corrections.',
   goals: 'recursive management-chain rules, retroactive salary corrections, and bi-temporal audit queries',
   prerequisiteTutorialId: 'basic-datalog',
-  lessons: [lesson1, lesson2, lesson3, lesson4],
+  lessons: [lesson1, lesson2, lesson3, lesson4, lesson5],
 }
 
 export { SETUP_L2 }

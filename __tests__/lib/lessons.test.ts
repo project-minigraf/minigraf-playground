@@ -143,6 +143,16 @@ describe('marketplace tutorial', () => {
 describe('org chart tutorial', () => {
   const orgChart = TUTORIALS.find((t) => t.id === 'org-chart')!
 
+  it('has exactly 5 lessons', () => {
+    expect(orgChart.lessons).toHaveLength(5)
+  })
+
+  it('has unique step IDs across all lessons', () => {
+    const allStepIds = orgChart.lessons.flatMap(l => l.steps.map(s => s.id))
+    const unique = new Set(allStepIds)
+    expect(unique.size).toBe(allStepIds.length)
+  })
+
   describe('lesson 1 — employee facts and joins', () => {
     it('exists with correct id', () => {
       expect(orgChart.lessons.find((l) => l.id === 'org-chart-1')).toBeDefined()
@@ -208,6 +218,23 @@ describe('org chart tutorial', () => {
     })
     it('step 4 is open-ended', () => {
       expect(orgChart.lessons.find((l) => l.id === 'org-chart-4')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
+
+  describe('lesson 5 — aggregates', () => {
+    it('exists with correct id', () => {
+      expect(orgChart.lessons.find((l) => l.id === 'org-chart-5')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(orgChart.lessons.find((l) => l.id === 'org-chart-5')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      orgChart.lessons.find((l) => l.id === 'org-chart-5')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(orgChart.lessons.find((l) => l.id === 'org-chart-5')!.steps[3].expectedResult).toBeUndefined()
     })
   })
 })
