@@ -77,83 +77,90 @@ const SETUP = `; Sellers
            [:order-a2-i1 :item/product :usb-cable]
            [:order-a2-i1 :item/price 19]])`
 
-// Lesson 2 variant: TechSource laptop price set via valid-time only (no permanent price).
-// This prevents duplicate rows when querying with :valid-at.
+// Lesson 2 variant: all baseline facts use valid-from "2025-01-01" so that :valid-at
+// queries at past dates can see them. TechSource laptop price is split into two
+// valid-time windows to demonstrate the price drop at the start of 2026.
 const SETUP_L2 = `; Sellers
-(transact [[:corestore-direct :seller/name "Corestore Direct"]
-           [:corestore-direct :seller/sla-days 3]
-           [:techsource :seller/name "TechSource"]
-           [:techsource :seller/sla-days 7]
-           [:gadgethaus :seller/name "GadgetHaus"]
-           [:gadgethaus :seller/sla-days 5]])
+(transact {:valid-from "2025-01-01"}
+  [[:corestore-direct :seller/name "Corestore Direct"]
+   [:corestore-direct :seller/sla-days 3]
+   [:techsource :seller/name "TechSource"]
+   [:techsource :seller/sla-days 7]
+   [:gadgethaus :seller/name "GadgetHaus"]
+   [:gadgethaus :seller/sla-days 5]])
 
 ; Products
-(transact [[:laptop-pro :product/name "LaptopPro 15"]
-           [:phone-x :product/name "PhoneX 12"]
-           [:nc-headphones :product/name "NoiseCancel Pro"]
-           [:usb-cable :product/name "USB-C Cable"]
-           [:keyboard-k1 :product/name "Compact Keyboard"]])
+(transact {:valid-from "2025-01-01"}
+  [[:laptop-pro :product/name "LaptopPro 15"]
+   [:phone-x :product/name "PhoneX 12"]
+   [:nc-headphones :product/name "NoiseCancel Pro"]
+   [:usb-cable :product/name "USB-C Cable"]
+   [:keyboard-k1 :product/name "Compact Keyboard"]])
 
 ; Seller listings — TechSource laptop omits permanent price; set via valid-time below
-(transact [[:listing-cd-laptop :listing/seller :corestore-direct]
-           [:listing-cd-laptop :listing/product :laptop-pro]
-           [:listing-cd-laptop :listing/price 1299]
-           [:listing-ts-laptop :listing/seller :techsource]
-           [:listing-ts-laptop :listing/product :laptop-pro]
-           [:listing-cd-phone :listing/seller :corestore-direct]
-           [:listing-cd-phone :listing/product :phone-x]
-           [:listing-cd-phone :listing/price 799]
-           [:listing-gh-phone :listing/seller :gadgethaus]
-           [:listing-gh-phone :listing/product :phone-x]
-           [:listing-gh-phone :listing/price 819]
-           [:listing-cd-nc :listing/seller :corestore-direct]
-           [:listing-cd-nc :listing/product :nc-headphones]
-           [:listing-cd-nc :listing/price 249]
-           [:listing-ts-nc :listing/seller :techsource]
-           [:listing-ts-nc :listing/product :nc-headphones]
-           [:listing-ts-nc :listing/price 229]
-           [:listing-cd-usb :listing/seller :corestore-direct]
-           [:listing-cd-usb :listing/product :usb-cable]
-           [:listing-cd-usb :listing/price 19]
-           [:listing-ts-keyboard :listing/seller :techsource]
-           [:listing-ts-keyboard :listing/product :keyboard-k1]
-           [:listing-ts-keyboard :listing/price 89]])
+(transact {:valid-from "2025-01-01"}
+  [[:listing-cd-laptop :listing/seller :corestore-direct]
+   [:listing-cd-laptop :listing/product :laptop-pro]
+   [:listing-cd-laptop :listing/price 1299]
+   [:listing-ts-laptop :listing/seller :techsource]
+   [:listing-ts-laptop :listing/product :laptop-pro]
+   [:listing-cd-phone :listing/seller :corestore-direct]
+   [:listing-cd-phone :listing/product :phone-x]
+   [:listing-cd-phone :listing/price 799]
+   [:listing-gh-phone :listing/seller :gadgethaus]
+   [:listing-gh-phone :listing/product :phone-x]
+   [:listing-gh-phone :listing/price 819]
+   [:listing-cd-nc :listing/seller :corestore-direct]
+   [:listing-cd-nc :listing/product :nc-headphones]
+   [:listing-cd-nc :listing/price 249]
+   [:listing-ts-nc :listing/seller :techsource]
+   [:listing-ts-nc :listing/product :nc-headphones]
+   [:listing-ts-nc :listing/price 229]
+   [:listing-cd-usb :listing/seller :corestore-direct]
+   [:listing-cd-usb :listing/product :usb-cable]
+   [:listing-cd-usb :listing/price 19]
+   [:listing-ts-keyboard :listing/seller :techsource]
+   [:listing-ts-keyboard :listing/product :keyboard-k1]
+   [:listing-ts-keyboard :listing/price 89]])
 
 ; Customers
-(transact [[:alice :customer/name "Alice"]
-           [:ben :customer/name "Ben"]
-           [:clara :customer/name "Clara"]])
+(transact {:valid-from "2025-01-01"}
+  [[:alice :customer/name "Alice"]
+   [:ben :customer/name "Ben"]
+   [:clara :customer/name "Clara"]])
 
 ; Orders
-(transact [[:order-a1 :order/customer :alice]
-           [:order-a1 :order/seller :corestore-direct]
-           [:order-a1 :order/status :delivered]
-           [:order-b1 :order/customer :ben]
-           [:order-b1 :order/seller :techsource]
-           [:order-b1 :order/status :delivered]
-           [:order-c1 :order/customer :clara]
-           [:order-c1 :order/seller :gadgethaus]
-           [:order-c1 :order/status :placed]
-           [:order-a2 :order/customer :alice]
-           [:order-a2 :order/seller :corestore-direct]
-           [:order-a2 :order/status :placed]])
+(transact {:valid-from "2025-01-01"}
+  [[:order-a1 :order/customer :alice]
+   [:order-a1 :order/seller :corestore-direct]
+   [:order-a1 :order/status :delivered]
+   [:order-b1 :order/customer :ben]
+   [:order-b1 :order/seller :techsource]
+   [:order-b1 :order/status :delivered]
+   [:order-c1 :order/customer :clara]
+   [:order-c1 :order/seller :gadgethaus]
+   [:order-c1 :order/status :placed]
+   [:order-a2 :order/customer :alice]
+   [:order-a2 :order/seller :corestore-direct]
+   [:order-a2 :order/status :placed]])
 
 ; Order items
-(transact [[:order-a1-i1 :item/order :order-a1]
-           [:order-a1-i1 :item/product :laptop-pro]
-           [:order-a1-i1 :item/price 1299]
-           [:order-b1-i1 :item/order :order-b1]
-           [:order-b1-i1 :item/product :laptop-pro]
-           [:order-b1-i1 :item/price 1249]
-           [:order-b1-i2 :item/order :order-b1]
-           [:order-b1-i2 :item/product :nc-headphones]
-           [:order-b1-i2 :item/price 229]
-           [:order-c1-i1 :item/order :order-c1]
-           [:order-c1-i1 :item/product :phone-x]
-           [:order-c1-i1 :item/price 819]
-           [:order-a2-i1 :item/order :order-a2]
-           [:order-a2-i1 :item/product :usb-cable]
-           [:order-a2-i1 :item/price 19]])
+(transact {:valid-from "2025-01-01"}
+  [[:order-a1-i1 :item/order :order-a1]
+   [:order-a1-i1 :item/product :laptop-pro]
+   [:order-a1-i1 :item/price 1299]
+   [:order-b1-i1 :item/order :order-b1]
+   [:order-b1-i1 :item/product :laptop-pro]
+   [:order-b1-i1 :item/price 1249]
+   [:order-b1-i2 :item/order :order-b1]
+   [:order-b1-i2 :item/product :nc-headphones]
+   [:order-b1-i2 :item/price 229]
+   [:order-c1-i1 :item/order :order-c1]
+   [:order-c1-i1 :item/product :phone-x]
+   [:order-c1-i1 :item/price 819]
+   [:order-a2-i1 :item/order :order-a2]
+   [:order-a2-i1 :item/product :usb-cable]
+   [:order-a2-i1 :item/price 19]])
 
 ; TechSource laptop price history (valid-time only — no permanent price above)
 (transact {:valid-from "2025-01-01" :valid-to "2025-12-31"}
@@ -430,11 +437,10 @@ const lesson3: Lesson = {
       id: 'm3-s2',
       instruction: `## Step 2: Total revenue per seller
 
-Join from order → order item → item price, then use \`(sum ?price)\` grouped by seller. Add \`:with ?item\` to ensure two items with the same price are counted as separate contributions — otherwise they would collapse into a single row before summing.`,
+Join from order → order item → item price, then use \`(sum ?price)\` grouped by seller. Minigraf groups by all plain variables in \`:find\` (\`?seller-name\`) and sums the prices across every matching item row within each group.`,
       starterCode: `${SETUP}
 
 (query [:find ?seller-name (sum ?price)
-        :with ?item
         :where [?order :order/seller ?seller]
                [?seller :seller/name ?seller-name]
                [?item :item/order ?order]
@@ -449,7 +455,7 @@ Join from order → order item → item price, then use \`(sum ?price)\` grouped
       },
       hints: [
         'Corestore Direct: laptop 1299 + usb-cable 19 = 1318. TechSource: laptop 1249 + headphones 229 = 1478.',
-        '`:with ?item` adds the item entity to the grouping key so that two items at the same price are not merged before `sum` runs.',
+        'Each row in the join (one per item) contributes its `?price` to the `sum` for its seller group.',
       ],
       successMessage: 'Revenue totals match: TechSource leads at 1,478 despite a lower unit price.',
     },
@@ -535,22 +541,23 @@ The join variable \`[?product]\` is shared with the outer query; \`?listing\` is
       id: 'm4-s2',
       instruction: `## Step 2: Sellers with no delivered orders
 
-Plain \`not\` excludes a binding when a pattern matches it. All variables inside the \`not\` body must already be bound by outer clauses.
+\`not-join\` excludes a binding when a sub-pattern can be satisfied. The join variable \`[?seller]\` is shared with the outer query; \`?order\` is a fresh inner variable introduced only inside the \`not-join\` body.
 
 Find every seller, then exclude any whose entity appears in a delivered order.`,
       starterCode: `${SETUP}
 
 (query [:find ?seller-name
         :where [?seller :seller/name ?seller-name]
-               (not [?order :order/seller ?seller]
-                    [?order :order/status :delivered])])`,
+               (not-join [?seller]
+                         [?order :order/seller ?seller]
+                         [?order :order/status :delivered])])`,
       expectedResult: {
         columns: ['?seller-name'],
         rows: [['GadgetHaus']],
       },
       hints: [
         'Corestore Direct has order-a1 (:delivered) and TechSource has order-b1 (:delivered) — both are excluded.',
-        'GadgetHaus only has order-c1 (:placed) — no delivered order exists, so it survives.',
+        'GadgetHaus only has order-c1 (:placed) — no delivered order exists, so it survives. Use `not-join [?seller]` because `?order` is a fresh variable introduced inside the body.',
       ],
       successMessage: 'GadgetHaus is the only seller with no fulfilled orders yet.',
     },
