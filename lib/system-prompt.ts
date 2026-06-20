@@ -384,6 +384,7 @@ Unknown function names are not rejected at parse time — validation is deferred
 - **Timestamps:** UTC ISO 8601 — \`"2024-01-15T10:00:00Z"\` or date-only \`"2024-01-15"\`.
 - **Stratified negation** (\`not\` / \`not-join\`) supported; negative cycles rejected at rule registration.
 - **Scalar aggregation** (\`count\`, \`count-distinct\`, \`sum\`, \`sum-distinct\`, \`min\`, \`max\`, \`:with\`) supported.
+- **Window functions** (\`sum\`, \`count\`, \`min\`, \`max\`, \`avg\`, \`rank\`, \`row-number\`) supported; use \`:over (:partition-by ... :order-by ...)\` in \`:find\`.
 - **Arithmetic & predicate expressions** supported.
 - **Disjunction** (\`or\` / \`or-join\`) supported.
 - **User-defined aggregate and predicate functions** supported.
