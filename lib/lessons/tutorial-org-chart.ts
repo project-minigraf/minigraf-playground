@@ -344,13 +344,120 @@ This step is open-ended — the tutor will give feedback.`,
   ],
 }
 
+const lesson3: Lesson = {
+  id: 'org-chart-3',
+  title: 'Recursive management chains',
+  description: 'Use recursive rules to traverse the full reporting hierarchy in both directions.',
+  steps: [
+    {
+      id: 'o3-s1',
+      instruction: `## Step 1: Define the recursive \`reports-to\` rule
+
+Rules let you derive new facts from existing ones. The two rules below together define \`reports-to\` recursively:
+
+- **Base case** — the first rule says "?emp reports-to ?mgr if there is a direct \`:employee/manager\` fact between them."
+- **Recursive case** — the second rule says "?emp reports-to ?mgr if ?emp has a direct manager ?mid, and ?mid reports-to ?mgr." This walks up the management chain any number of levels.
+
+Running only rules produces no result rows — rules register derived predicates but do not return data on their own. You query derived predicates in a separate \`(query ...)\` call.`,
+      starterCode: `${SETUP}
+
+(rule [(reports-to ?emp ?mgr) [?emp :employee/manager ?mgr]])
+(rule [(reports-to ?emp ?mgr) [?emp :employee/manager ?mid] (reports-to ?mid ?mgr)])`,
+      expectedResult: { columns: [], rows: [] },
+      hints: [
+        'The base case anchors the recursion: a direct `:employee/manager` fact is the simplest form of reports-to.',
+        'Running rules alone returns no rows — the rules define derived predicates. Add a `(query ...)` in the next step to see results.',
+      ],
+      successMessage: 'Rules registered — the recursive reports-to predicate is now available for querying.',
+    },
+    {
+      id: 'o3-s2',
+      instruction: `## Step 2: Who reports to Alice (direct and indirect)?
+
+Now query the derived \`reports-to\` predicate. Because the rule is recursive, it walks the full chain upward — not just direct reports.
+
+All five non-CEO employees ultimately report to Alice.`,
+      starterCode: `${SETUP}
+
+(rule [(reports-to ?emp ?mgr) [?emp :employee/manager ?mgr]])
+(rule [(reports-to ?emp ?mgr) [?emp :employee/manager ?mid] (reports-to ?mid ?mgr)])
+
+(query [:find ?name
+        :where (reports-to ?emp :alice)
+               [?emp :employee/name ?name]])`,
+      expectedResult: {
+        columns: ['?name'],
+        rows: [['Bob'], ['Carol'], ['Dave'], ['Eve'], ['Frank']],
+      },
+      hints: [
+        'Bob and Carol are direct reports to Alice (base case). Dave, Eve, and Frank report to Bob, who reports to Alice — the recursive case covers them.',
+        'The literal `:alice` in `(reports-to ?emp :alice)` binds the manager position, so only employees whose chain ends at Alice are returned.',
+      ],
+      successMessage: 'All five non-CEO employees returned — the recursive rule traverses the full hierarchy.',
+    },
+    {
+      id: 'o3-s3',
+      instruction: `## Step 3: Who is in Bob's subtree?
+
+Use \`reports-to\` with \`:bob\` as the manager to find everyone who falls under Bob in the hierarchy.
+
+Dave, Eve, and Frank all report directly to Bob, so only the base case fires here. But if Bob had indirect reports, the recursive case would include them too.`,
+      starterCode: `${SETUP}
+
+(rule [(reports-to ?emp ?mgr) [?emp :employee/manager ?mgr]])
+(rule [(reports-to ?emp ?mgr) [?emp :employee/manager ?mid] (reports-to ?mid ?mgr)])
+
+(query [:find ?name
+        :where (reports-to ?emp :bob)
+               [?emp :employee/name ?name]])`,
+      expectedResult: {
+        columns: ['?name'],
+        rows: [['Dave'], ['Eve'], ['Frank']],
+      },
+      hints: [
+        'Dave, Eve, and Frank each have `:employee/manager :bob` — the base case of the rule matches all three directly.',
+        'Bob reports to Alice, not to himself, so Bob is not in his own subtree.',
+      ],
+      successMessage: "Bob's subtree: Dave, Eve, and Frank.",
+    },
+    {
+      id: 'o3-s4',
+      instruction: `## Step 4: Combine recursion with temporal queries (open-ended)
+
+Before the 2025 reorg, Frank reported to Alice (via Operations). After the reorg he reports to Bob (via Engineering).
+
+Using \`${SETUP_L2}\` and the same recursive rule, explore how the reporting chain changes over time. For example:
+- Who reported to Alice at \`:valid-at "2025-01-01"\`?
+- Who is in Bob's subtree at \`:valid-at "2025-10-01"\`?
+
+This step is open-ended — the tutor will give feedback.`,
+      starterCode: `${SETUP_L2}
+
+; Add the recursive rule
+(rule [(reports-to ?emp ?mgr) [?emp :employee/manager ?mgr]])
+(rule [(reports-to ?emp ?mgr) [?emp :employee/manager ?mid] (reports-to ?mid ?mgr)])
+
+; Try a temporal query — e.g. who reported to Alice before the reorg?
+; (query [:find ?name
+;         :valid-at "2025-01-01"
+;         :where (reports-to ?emp :alice)
+;                [?emp :employee/name ?name]])`,
+      hints: [
+        'At `:valid-at "2025-01-01"` Frank was in Operations reporting to Alice — the base case should include him as a direct report.',
+        'At `:valid-at "2025-10-01"` Frank is in Engineering under Bob, so he appears in Bob\'s subtree but reaches Alice only via the recursive case (Frank → Bob → Alice).',
+      ],
+      successMessage: 'You combined recursive rules with temporal queries to audit the reporting chain across time.',
+    },
+  ],
+}
+
 export const tutorialOrgChart: Tutorial = {
   id: 'org-chart',
   title: 'Company Org Chart',
   description: 'Model employees, departments, and reporting lines with retroactive salary corrections.',
   goals: 'recursive management-chain rules, retroactive salary corrections, and bi-temporal audit queries',
   prerequisiteTutorialId: 'basic-datalog',
-  lessons: [lesson1, lesson2],
+  lessons: [lesson1, lesson2, lesson3],
 }
 
 export { SETUP_L2 }

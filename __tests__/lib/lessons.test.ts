@@ -176,4 +176,21 @@ describe('org chart tutorial', () => {
       expect(orgChart.lessons.find((l) => l.id === 'org-chart-2')!.steps[3].expectedResult).toBeUndefined()
     })
   })
+
+  describe('lesson 3 — recursive management chains', () => {
+    it('exists with correct id', () => {
+      expect(orgChart.lessons.find((l) => l.id === 'org-chart-3')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(orgChart.lessons.find((l) => l.id === 'org-chart-3')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      orgChart.lessons.find((l) => l.id === 'org-chart-3')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(orgChart.lessons.find((l) => l.id === 'org-chart-3')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
 })
