@@ -52,7 +52,7 @@ const SETUP = `; Departments — :ops and :legal have no employees (drives negat
            [:dave :employee/project :proj-beta]])`
 
 // Lesson 2 variant: Frank's dept/manager use per-fact valid-time for the reorg.
-// Eve salary starts permanent (tx 2) then is corrected retroactively (tx 4-6)
+// Eve salary starts permanent then is corrected retroactively with a retract and bounded asserts,
 // so :as-of queries can show what the DB believed before the correction.
 const SETUP_L2 = `; Departments
 (transact [[:eng :dept/name "Engineering"]
@@ -97,13 +97,13 @@ const SETUP_L2 = `; Departments
            [:frank :employee/department :ops "2024-01-01" "2025-06-30"]
            [:frank :employee/manager :alice "2024-01-01" "2025-06-30"]])
 
-; Frank post-reorg: moves to Engineering under Bob (valid from 2025-07-01) — tx 3
+; Frank post-reorg: moves to Engineering under Bob (valid from 2025-07-01)
 (transact {:valid-from "2025-07-01"}
   [[:frank :employee/department :eng]
    [:frank :employee/manager :bob]])
 
 ; Eve salary correction: raise should have applied from 2025-04-01
-; but was only recorded in a later transaction — tx 4, 5, 6
+; but was only recorded in a later transaction (retract + two bounded asserts below)
 (retract [[:eve :employee/salary 85000]])
 
 (transact {:valid-to "2025-03-31"}
