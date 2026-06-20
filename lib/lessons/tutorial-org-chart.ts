@@ -94,8 +94,8 @@ const SETUP_L2 = `; Departments
            [:frank :employee/salary 100000]
            [:frank :employee/hired-on "2021-11-01"]
            ; Frank pre-reorg: in Operations, reporting to Alice (valid until end of June 2025)
-           [:frank :employee/department :ops "2024-01-01" "2025-06-30"]
-           [:frank :employee/manager :alice "2024-01-01" "2025-06-30"]])
+           [:frank :employee/department :ops {:valid-from "2024-01-01" :valid-to "2025-06-30"}]
+           [:frank :employee/manager :alice {:valid-from "2024-01-01" :valid-to "2025-06-30"}]])
 
 ; Frank post-reorg: moves to Engineering under Bob (valid from 2025-07-01)
 (transact {:valid-from "2025-07-01"}
@@ -223,13 +223,134 @@ This step is open-ended — the tutor will give feedback.`,
   ],
 }
 
+const lesson2: Lesson = {
+  id: 'org-chart-2',
+  title: 'Bi-temporal history',
+  description:
+    'Understand when to use valid time (what was true in the world) versus transaction time (what did the database believe), and how to combine both axes for complete temporal audits.',
+  steps: [
+    {
+      id: 'o2-s1',
+      instruction: `## Step 1: Query the world at a point in time with \`:valid-at\`
+
+\`:valid-at "date"\` answers "what was true in the world on this date?" It filters every triple to only those whose valid-time window covers the given date.
+
+Frank was reorganised mid-2025: before July 2025 he was in Operations reporting to Alice; from July 2025 onwards he is in Engineering reporting to Bob. The two queries below show the difference.`,
+      starterCode: `${SETUP_L2}
+
+; Pre-reorg: Frank in Operations under Alice
+(query [:find ?dept ?manager
+        :valid-at "2025-01-01"
+        :where [:frank :employee/department ?dept]
+               [:frank :employee/manager ?manager]])
+
+; Post-reorg: Frank in Engineering under Bob
+(query [:find ?dept ?manager
+        :valid-at "2025-10-01"
+        :where [:frank :employee/department ?dept]
+               [:frank :employee/manager ?manager]])`,
+      expectedResult: {
+        columns: ['?dept', '?manager'],
+        rows: [[':eng', ':bob']],
+      },
+      hints: [
+        'The per-fact valid-time tuple `[:frank :employee/department :ops "2024-01-01" "2025-06-30"]` is only visible when `:valid-at` falls inside that window.',
+        'The open-ended fact `(transact {:valid-from "2025-07-01"} ...)` has no valid-to bound, so it covers all dates from 2025-07-01 onwards.',
+      ],
+      successMessage: 'Post-reorg snapshot returned: Frank is in :eng reporting to :bob.',
+    },
+    {
+      id: 'o2-s2',
+      instruction: `## Step 2: Query what the database believed with \`:as-of\`
+
+\`:as-of N\` answers "what did the database believe after transaction N?" It replays the log up to that transaction count, ignoring later corrections.
+
+Eve's salary was recorded as 85,000 permanently in transaction 2. Transactions 4–6 later corrected this: the 85,000 fact was retracted and replaced with two bounded facts (85,000 until 2025-03-31, 95,000 from 2025-04-01). The queries below show the before and after.`,
+      starterCode: `${SETUP_L2}
+
+; What the DB believed at tx 2 (before the correction)
+(query [:find ?salary
+        :as-of 2
+        :valid-at "2025-05-01"
+        :where [:eve :employee/salary ?salary]])
+
+; Current belief (after the correction)
+(query [:find ?salary
+        :valid-at "2025-05-01"
+        :where [:eve :employee/salary ?salary]])`,
+      expectedResult: {
+        columns: ['?salary'],
+        rows: [['95000']],
+      },
+      hints: [
+        '`:as-of 2` replays only the first 2 transactions, so the retract (tx 4) and bounded re-asserts (tx 5–6) have not been applied yet — the original 85,000 is still permanent.',
+        'The current (no `:as-of`) view sees all 6 transactions: the 85,000 permanent fact was retracted and replaced, so only the bounded 95,000 fact covers 2025-05-01.',
+      ],
+      successMessage: 'Current corrected salary of 95,000 confirmed; before correction the DB believed 85,000.',
+    },
+    {
+      id: 'o2-s3',
+      instruction: `## Step 3: Combine both axes for a full temporal audit
+
+Combining \`:as-of N\` with \`:valid-at "date"\` lets you ask "what did the database believe at transaction N about the world on date D?" — the gold standard for temporal audits and compliance checks.
+
+The queries below show Frank's department at a specific valid-time date, both through the lens of an early transaction snapshot and through the current view.`,
+      starterCode: `${SETUP_L2}
+
+; At tx 2, the post-reorg transaction (tx 3) had not yet been applied.
+; Frank's only pre-reorg window ends 2025-06-30, so 2025-10-01 is outside it → empty.
+(query [:find ?dept
+        :as-of 2
+        :valid-at "2025-10-01"
+        :where [:frank :employee/department ?dept]])
+
+; Current view: tx 3 has been applied, Frank is in :eng from 2025-07-01 onwards.
+(query [:find ?dept
+        :valid-at "2025-10-01"
+        :where [:frank :employee/department ?dept]])`,
+      expectedResult: {
+        columns: ['?dept'],
+        rows: [[':eng']],
+      },
+      hints: [
+        'At `:as-of 2`, the database only knows about transactions 1 and 2. Transaction 3 (the post-reorg open-ended fact) has not been applied, so no dept fact covers 2025-10-01.',
+        'The current view includes all 6 transactions. Transaction 3 asserted `:frank :employee/department :eng` from 2025-07-01 with no valid-to, so it covers 2025-10-01.',
+      ],
+      successMessage: 'Bi-temporal audit complete: empty at tx-2 snapshot, :eng in the current view.',
+    },
+    {
+      id: 'o2-s4',
+      instruction: `## Step 4: Model your own time-windowed fact (open-ended)
+
+Add a new employee or update an existing one with a time-windowed fact, then write queries that show different results at different valid-time dates.
+
+Try adding a second department transfer, a salary change, or a project assignment with a specific valid-time window. Use \`:valid-at\` to verify the before and after snapshots.
+
+This step is open-ended — the tutor will give feedback.`,
+      starterCode: `${SETUP_L2}
+
+; Example: assert a fact with a valid-time window
+; (transact {:valid-from "2026-01-01"} [[:frank :employee/salary 120000]])
+
+; Then query at two dates to see the difference
+; (query [:find ?salary :valid-at "2025-12-31" :where [:frank :employee/salary ?salary]])
+; (query [:find ?salary :valid-at "2026-02-01" :where [:frank :employee/salary ?salary]])`,
+      hints: [
+        'Use `(transact {:valid-from "date"} [...])` or `(transact {:valid-from "date" :valid-to "date"} [...])` to add a bounded fact.',
+        'Query the same attribute at a date before and after your window to verify that the fact is only visible within its valid-time range.',
+      ],
+      successMessage: 'You modelled a time-windowed fact and verified it with valid-at queries.',
+    },
+  ],
+}
+
 export const tutorialOrgChart: Tutorial = {
   id: 'org-chart',
   title: 'Company Org Chart',
   description: 'Model employees, departments, and reporting lines with retroactive salary corrections.',
   goals: 'recursive management-chain rules, retroactive salary corrections, and bi-temporal audit queries',
   prerequisiteTutorialId: 'basic-datalog',
-  lessons: [lesson1],
+  lessons: [lesson1, lesson2],
 }
 
 export { SETUP_L2 }
