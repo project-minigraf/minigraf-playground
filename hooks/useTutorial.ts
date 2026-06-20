@@ -40,18 +40,9 @@ export function useTutorial(initialTutorialId: string | null) {
 
   const isUnlocked = useCallback(
     (tutorialId: string): boolean => {
-      const tutorial = TUTORIALS.find((t) => t.id === tutorialId)
-      if (!tutorial) return false
-      if (!tutorial.prerequisiteTutorialId) return true
-      const prereq = TUTORIALS.find((t) => t.id === tutorial.prerequisiteTutorialId)
-      if (!prereq) return true
-      return prereq.lessons.every((lesson) =>
-        lesson.steps.every((step) =>
-          (completedStepsPerLesson[lesson.id] ?? []).includes(step.id)
-        )
-      )
+      return TUTORIALS.some((t) => t.id === tutorialId)
     },
-    [completedStepsPerLesson]
+    []
   )
 
   const switchTutorial = useCallback(async (tutorialId: string) => {

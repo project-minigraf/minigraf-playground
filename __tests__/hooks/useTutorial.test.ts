@@ -53,32 +53,23 @@ beforeEach(() => {
 })
 
 describe('useTutorial', () => {
-  it('basic-datalog is always unlocked', async () => {
+  it('known tutorials are always unlocked', async () => {
     const { result } = renderHook(() => useTutorial('basic-datalog'))
     await waitFor(() => expect(result.current.activeTutorial?.id).toBe('basic-datalog'))
     expect(result.current.isUnlocked('basic-datalog')).toBe(true)
+    expect(result.current.isUnlocked('marketplace')).toBe(true)
   })
 
-  it('marketplace is locked when basic-datalog is incomplete', async () => {
+  it('unknown tutorial id returns false from isUnlocked', async () => {
     const { result } = renderHook(() => useTutorial('basic-datalog'))
     await waitFor(() => expect(result.current.activeTutorial).not.toBeNull())
-    expect(result.current.isUnlocked('marketplace')).toBe(false)
-  })
-
-  it('marketplace unlocks when all basic-datalog steps are complete', async () => {
-    mockGetLessonProgress.mockResolvedValue({ completedSteps: ['l1-s1', 'l1-s2'] })
-    const { result } = renderHook(() => useTutorial('basic-datalog'))
-    await waitFor(() => expect(result.current.completedStepsPerLesson['lesson-1']).toEqual(['l1-s1', 'l1-s2']))
-    expect(result.current.isUnlocked('marketplace')).toBe(true)
+    expect(result.current.isUnlocked('nonexistent')).toBe(false)
   })
 
   it('switchTutorial persists activeTutorialId to session prefs', async () => {
     mockGetSessionPrefs.mockResolvedValue({ provider: 'groq', model: 'llama' })
-    mockGetLessonProgress.mockResolvedValue({ completedSteps: ['l1-s1', 'l1-s2'] })
     const { result } = renderHook(() => useTutorial('basic-datalog'))
-    await waitFor(() =>
-      expect(result.current.completedStepsPerLesson['lesson-1']).toEqual(['l1-s1', 'l1-s2'])
-    )
+    await waitFor(() => expect(result.current.activeTutorial?.id).toBe('basic-datalog'))
     await act(async () => { result.current.switchTutorial('marketplace') })
     expect(mockSetSessionPrefs).toHaveBeenCalledWith(
       expect.objectContaining({ activeTutorialId: 'marketplace' })
