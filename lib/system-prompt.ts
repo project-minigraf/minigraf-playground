@@ -254,8 +254,8 @@ Expression clauses appear in \`:where\` as a vector whose first element is a lis
 **Filter predicates** — keep row if truthy (no new variable bound):
 \`\`\`datalog
 [(< ?age 30)]  [(>= ?salary 50000)]  [(= ?status :active)]  [(!= ?role :admin)]
-[(string? ?name)]  [(integer? ?count)]  [(nil? ?maybe)]
-[(starts-with? ?tag "work")]  [(ends-with? ?file ".rs")]  [(matches? ?email "^[^@]+@[^@]+$")]
+[(string? ?name)]  [(integer? ?count)]  [(float? ?ratio)]  [(boolean? ?flag)]  [(nil? ?maybe)]
+[(starts-with? ?tag "work")]  [(ends-with? ?file ".rs")]  [(contains? ?bio "engineer")]  [(matches? ?email "^[^@]+@[^@]+$")]
 \`\`\`
 
 **Arithmetic bindings** — evaluate and bind result to output variable:
