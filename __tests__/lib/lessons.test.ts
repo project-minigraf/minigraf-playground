@@ -238,3 +238,102 @@ describe('org chart tutorial', () => {
     })
   })
 })
+
+describe('sports league tutorial', () => {
+  const sportsLeague = TUTORIALS.find((t) => t.id === 'sports-league')!
+
+  it('has exactly 5 lessons', () => {
+    expect(sportsLeague.lessons).toHaveLength(5)
+  })
+
+  it('has unique step IDs across all lessons', () => {
+    const allStepIds = sportsLeague.lessons.flatMap((l) => l.steps.map((s) => s.id))
+    const unique = new Set(allStepIds)
+    expect(unique.size).toBe(allStepIds.length)
+  })
+
+  describe('lesson 1 — rosters, results, and expression filters', () => {
+    it('exists with correct id', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-1')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-1')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      sportsLeague.lessons.find((l) => l.id === 'sports-league-1')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-1')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
+
+  describe('lesson 2 — bi-temporal history', () => {
+    it('exists with correct id', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-2')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-2')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      sportsLeague.lessons.find((l) => l.id === 'sports-league-2')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-2')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
+
+  describe('lesson 3 — recursive transfer chains', () => {
+    it('exists with correct id', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-3')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-3')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      sportsLeague.lessons.find((l) => l.id === 'sports-league-3')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-3')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
+
+  describe('lesson 4 — negation', () => {
+    it('exists with correct id', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-4')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-4')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      sportsLeague.lessons.find((l) => l.id === 'sports-league-4')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-4')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
+
+  describe('lesson 5 — aggregates', () => {
+    it('exists with correct id', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-5')).toBeDefined()
+    })
+    it('has 4 steps', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-5')!.steps).toHaveLength(4)
+    })
+    it('steps 1-3 have expectedResult', () => {
+      sportsLeague.lessons.find((l) => l.id === 'sports-league-5')!.steps.slice(0, 3).forEach((s) => {
+        expect(s.expectedResult).toBeDefined()
+      })
+    })
+    it('step 4 is open-ended', () => {
+      expect(sportsLeague.lessons.find((l) => l.id === 'sports-league-5')!.steps[3].expectedResult).toBeUndefined()
+    })
+  })
+})
