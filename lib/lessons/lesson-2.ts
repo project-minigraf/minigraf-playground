@@ -9,7 +9,9 @@ export const lesson2: Lesson = {
       id: 'l2-s1',
       instruction: `## Step 1: Define a simple rule\n\nRules let Minigraf derive facts without storing them directly.\n\nRun this code to assert two humans and register a rule that says every human is mortal.`,
       starterCode: `(transact [[:socrates :kind :human]
-           [:plato :kind :human]])
+           [:socrates :name "Socrates"]
+           [:plato :kind :human]
+           [:plato :name "Plato"]])
 
 (rule [(mortal ?who) [?who :kind :human]])`,
       expectedResult: { columns: [], rows: [] },
@@ -21,33 +23,39 @@ export const lesson2: Lesson = {
     },
     {
       id: 'l2-s2',
-      instruction: `## Step 2: Query a derived fact\n\nNow query all mortals. The rule should derive them from the human facts.`,
+      instruction: `## Step 2: Query a derived fact\n\nNow query all mortals. The rule should derive them from the human facts. Join through \`?who\` to retrieve the \`:name\` attribute for a readable result.`,
       starterCode: `(transact [[:socrates :kind :human]
-           [:plato :kind :human]])
+           [:socrates :name "Socrates"]
+           [:plato :kind :human]
+           [:plato :name "Plato"]])
 
 (rule [(mortal ?who) [?who :kind :human]])
 
-(query [:find ?who
-        :where (mortal ?who)])`,
-      expectedResult: { columns: ['?who'], rows: [[':plato'], [':socrates']] },
+(query [:find ?name
+        :where (mortal ?who)
+               [?who :name ?name]])`,
+      expectedResult: { columns: ['?name'], rows: [['Plato'], ['Socrates']] },
       hints: [
         'You query a derived predicate the same way you query a base relation.',
-        'The body of the query is `(mortal ?who)`, not a triple pattern.',
+        'Join `?who` to `:name` to get a human-readable result instead of an internal entity ID.',
       ],
       successMessage: 'Inference working. The mortal facts were derived by the rule rather than asserted directly.',
     },
     {
       id: 'l2-s3',
-      instruction: `## Step 3: Chain two rules\n\nAdd a second rule that says philosophers are humans who are mortal, then query all philosophers.`,
+      instruction: `## Step 3: Chain two rules\n\nAdd a second rule that says philosophers are humans who are mortal, then query all philosophers by name.`,
       starterCode: `(transact [[:socrates :kind :human]
-           [:plato :kind :human]])
+           [:socrates :name "Socrates"]
+           [:plato :kind :human]
+           [:plato :name "Plato"]])
 
 (rule [(mortal ?who) [?who :kind :human]])
 (rule [(philosopher ?who) (mortal ?who) [?who :kind :human]])
 
-(query [:find ?who
-        :where (philosopher ?who)])`,
-      expectedResult: { columns: ['?who'], rows: [[':plato'], [':socrates']] },
+(query [:find ?name
+        :where (philosopher ?who)
+               [?who :name ?name]])`,
+      expectedResult: { columns: ['?name'], rows: [['Plato'], ['Socrates']] },
       hints: [
         'A rule body can mix derived predicates like `(mortal ?who)` and triple patterns.',
         'This is rule chaining: one derived predicate feeds another.',

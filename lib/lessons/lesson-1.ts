@@ -21,7 +21,11 @@ export const lesson1: Lesson = {
     {
       id: 'l1-s2',
       instruction: `## Step 2: Query a specific fact\n\nNow look up Alice's friendship edge and restrict the result to Bob.`,
-      starterCode: `(query [:find ?friend
+      starterCode: `(transact [[:alice :friend :bob]
+           [:alice :friend :carol]
+           [:bob :friend :dave]])
+
+(query [:find ?friend
         :where [:alice :friend ?friend]
                [(= ?friend :bob)]])`,
       expectedResult: { columns: ['?friend'], rows: [[':bob']] },
@@ -34,7 +38,11 @@ export const lesson1: Lesson = {
     {
       id: 'l1-s3',
       instruction: `## Step 3: Query with a variable\n\nVariables start with \`?\`. Use one to find all of Alice's friends.`,
-      starterCode: `(query [:find ?who
+      starterCode: `(transact [[:alice :friend :bob]
+           [:alice :friend :carol]
+           [:bob :friend :dave]])
+
+(query [:find ?who
         :where [:alice :friend ?who]])`,
       expectedResult: { columns: ['?who'], rows: [[':bob'], [':carol']] },
       hints: [

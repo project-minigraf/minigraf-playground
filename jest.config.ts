@@ -10,6 +10,7 @@ const config: Config = {
     '^@/(.*)$': '<rootDir>/$1',
     '^/wasm/(.*)$': '<rootDir>/public/wasm/$1',
   },
+  transformIgnorePatterns: ['/node_modules/(?!@minigraf/browser/)'],
 }
 
 export default createJestConfig(config)

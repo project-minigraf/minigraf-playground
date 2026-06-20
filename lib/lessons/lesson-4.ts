@@ -39,7 +39,7 @@ export const lesson4: Lesson = {
       starterCode: `(transact {:valid-from "2020-01-01" :valid-to "2023-12-31"}
   [[:alice :company :acme]])
 
-(retract [[:alice :company :acme "2020-01-01" "2023-12-31"]])
+(retract [[:alice :company :acme]])
 (transact {:valid-from "2020-01-01" :valid-to "2022-06-30"}
   [[:alice :company :acme]])
 
@@ -59,7 +59,7 @@ export const lesson4: Lesson = {
       starterCode: `(transact {:valid-from "2020-01-01" :valid-to "2023-12-31"}
   [[:alice :company :acme]])
 
-(retract [[:alice :company :acme "2020-01-01" "2023-12-31"]])
+(retract [[:alice :company :acme]])
 (transact {:valid-from "2020-01-01" :valid-to "2022-06-30"}
   [[:alice :company :acme]])
 
