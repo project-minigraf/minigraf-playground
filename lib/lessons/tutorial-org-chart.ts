@@ -451,13 +451,114 @@ This step is open-ended — the tutor will give feedback.`,
   ],
 }
 
+const lesson4: Lesson = {
+  id: 'org-chart-4',
+  title: 'Negation',
+  description: 'Use not and not-join to find employees and departments defined by the absence of a relationship.',
+  steps: [
+    {
+      id: 'o4-s1',
+      instruction: `## Step 1: Departments with no employees (\`not-join\`)
+
+Find departments that have no employees assigned to them.
+
+\`not-join [?dept]\` negates the inner pattern for each binding of \`?dept\` from the outer query. The bracketed variables are those shared between the outer query and the not body. The not-join succeeds — and the department is included in the results — when no fact matches \`[_ :employee/department ?dept]\` for that binding.`,
+      starterCode: `${SETUP}
+
+(query [:find ?dept-name
+        :where [?dept :dept/name ?dept-name]
+               (not-join [?dept]
+                 [_ :employee/department ?dept])])`,
+      expectedResult: {
+        columns: ['?dept-name'],
+        rows: [['Operations'], ['Legal']],
+      },
+      hints: [
+        '`not-join [?dept]` shares `?dept` with the outer query. For each department entity, it checks whether any triple `[_ :employee/department ?dept]` exists. If none exists, the department passes.',
+        'Engineering and Marketing have employees assigned to them, so they are excluded. Operations and Legal have no `:employee/department` facts pointing at them.',
+      ],
+      successMessage: 'Operations and Legal returned — the two departments with no employees.',
+    },
+    {
+      id: 'o4-s2',
+      instruction: `## Step 2: Employees not on any project (\`not-join\`)
+
+Find employees with no \`:employee/project\` fact. Eve and Frank were never assigned to a project.
+
+\`not-join [?emp]\` shares the employee entity variable with the outer query. For each employee, the not-join checks whether any \`[?emp :employee/project _]\` fact exists — if none does, the employee is returned.`,
+      starterCode: `${SETUP}
+
+(query [:find ?name
+        :where [?emp :employee/name ?name]
+               (not-join [?emp]
+                 [?emp :employee/project _])])`,
+      expectedResult: {
+        columns: ['?name'],
+        rows: [['Eve'], ['Frank']],
+      },
+      hints: [
+        'Alice, Bob, Carol, and Dave all have at least one `:employee/project` fact, so they are excluded by the not-join.',
+        'Eve and Frank have no `:employee/project` facts at all — `not-join [?emp]` succeeds for them and they appear in the results.',
+      ],
+      successMessage: 'Eve and Frank returned — the two employees with no project assignment.',
+    },
+    {
+      id: 'o4-s3',
+      instruction: `## Step 3: Employees with no manager (\`not\`)
+
+Find employees with no \`:employee/manager\` fact — the top of the hierarchy.
+
+\`not\` (without join) is the simpler form. It negates a pattern that only references variables already bound in the outer query. Here \`?emp\` is already bound by the employee name clause, and the wildcard \`_\` introduces no new variable that needs sharing.`,
+      starterCode: `${SETUP}
+
+(query [:find ?name
+        :where [?emp :employee/name ?name]
+               (not [?emp :employee/manager _])])`,
+      expectedResult: {
+        columns: ['?name'],
+        rows: [['Alice']],
+      },
+      hints: [
+        '`not` (without the join form) is sufficient here because the pattern `[?emp :employee/manager _]` only uses `?emp`, which is already bound by the outer clause.',
+        'Alice is the only employee with no `:employee/manager` fact — she is the CEO at the top of the hierarchy.',
+      ],
+      successMessage: 'Alice returned — the sole employee with no manager fact.',
+    },
+    {
+      id: 'o4-s4',
+      instruction: `## Step 4: Engineering employees not on Project Alpha (open-ended)
+
+Write a query that finds Engineering employees who are **not** assigned to Project Alpha (\`:proj-alpha\`).
+
+You will need to combine a department filter with a \`not-join\` on the project assignment.
+
+This step is open-ended — the tutor will give feedback.`,
+      starterCode: `${SETUP}
+
+; Find Engineering employees not on :proj-alpha
+; Hint: filter by [:emp :employee/department :eng]
+; then use not-join [?emp] to exclude those with [:emp :employee/project :proj-alpha]
+(query [:find ?name
+        :where [?emp :employee/department :eng]
+               [?emp :employee/name ?name]
+               (not-join [?emp]
+                 [?emp :employee/project :proj-alpha])])`,
+      hints: [
+        'Start by constraining `?emp` to Engineering employees: `[?emp :employee/department :eng]`. Then negate the project assignment with `(not-join [?emp] [?emp :employee/project :proj-alpha])`.',
+        'Bob is in Engineering but is assigned to `:proj-alpha`, so he should be excluded. Dave, Eve, and Frank are also in Engineering but are not on Project Alpha.',
+      ],
+      successMessage: 'You combined department filtering with negation to find Engineering employees off Project Alpha.',
+    },
+  ],
+}
+
 export const tutorialOrgChart: Tutorial = {
   id: 'org-chart',
   title: 'Company Org Chart',
   description: 'Model employees, departments, and reporting lines with retroactive salary corrections.',
   goals: 'recursive management-chain rules, retroactive salary corrections, and bi-temporal audit queries',
   prerequisiteTutorialId: 'basic-datalog',
-  lessons: [lesson1, lesson2, lesson3],
+  lessons: [lesson1, lesson2, lesson3, lesson4],
 }
 
 export { SETUP_L2 }
