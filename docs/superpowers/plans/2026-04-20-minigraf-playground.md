@@ -264,7 +264,7 @@ git commit -m "feat: add Vercel deployment config and env var documentation"
 ```json
 {
   "version": "0.21.1",
-  "url": "https://github.com/adityamukho/minigraf/releases/download/v0.21.1/minigraf-browser-wasm.tar.gz",
+  "url": "https://github.com/project-minigraf/minigraf/releases/download/v0.21.1/minigraf-browser-wasm.tar.gz",
   "outputDir": "public/wasm"
 }
 ```

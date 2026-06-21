@@ -7,7 +7,7 @@
 
 ## Overview
 
-A web-based interactive tutorial and sandbox for [Minigraf](https://github.com/adityamukho/minigraf) — a tiny embedded graph database with Datalog querying and bi-temporal time travel. The playground runs entirely in the browser using Minigraf's pre-built WASM module, with an AI tutor powered by the user's own LLM API key (BYOK) or an anonymous free-tier fallback.
+A web-based interactive tutorial and sandbox for [Minigraf](https://github.com/project-minigraf/minigraf) — a tiny embedded graph database with Datalog querying and bi-temporal time travel. The playground runs entirely in the browser using Minigraf's pre-built WASM module, with an AI tutor powered by the user's own LLM API key (BYOK) or an anonymous free-tier fallback.
 
 ---
 
