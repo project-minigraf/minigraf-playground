@@ -16,6 +16,10 @@ const VALID_EVENTS = new Set<EventName>([
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
+function isValidDate(s: string): boolean {
+  return DATE_RE.test(s) && !isNaN(new Date(s).getTime())
+}
+
 export async function POST(req: Request) {
   let body: { event: string; date: string }
   try {
@@ -23,7 +27,7 @@ export async function POST(req: Request) {
   } catch {
     return new Response(null, { status: 400 })
   }
-  if (!VALID_EVENTS.has(body.event as EventName) || !DATE_RE.test(body.date)) {
+  if (!VALID_EVENTS.has(body.event as EventName) || !isValidDate(body.date)) {
     return new Response(null, { status: 400 })
   }
   await kv.incr(`events:${body.event}:${body.date}`)

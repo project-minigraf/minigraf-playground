@@ -52,5 +52,17 @@ describe('POST /api/event', () => {
     })
     const res = await POST(req)
     expect(res.status).toBe(400)
+    expect(mockIncr).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 for missing fields', async () => {
+    const req = new Request('http://localhost/api/event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event: 'query_run' }), // missing date
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(400)
+    expect(mockIncr).not.toHaveBeenCalled()
   })
 })
