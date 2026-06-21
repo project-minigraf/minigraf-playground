@@ -9,5 +9,5 @@ if (typeof globalThis.structuredClone !== 'function') {
 
 // Define fetch if it doesn't exist (for spyOn compatibility in tests)
 if (typeof globalThis.fetch === 'undefined') {
-  globalThis.fetch = jest.fn()
+  globalThis.fetch = jest.fn().mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue({}) })
 }

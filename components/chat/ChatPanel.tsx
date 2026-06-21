@@ -111,6 +111,7 @@ function buildIntroPrompt(
 }
 
 import { AnonCapBanner } from './AnonCapBanner'
+import { trackEvent } from '@/lib/analytics'
 import { setChatHistory, clearChatHistory, getApiKey } from '@/lib/storage'
 import type { ChatMessage as StoredChatMessage, Provider } from '@/lib/types'
 
@@ -367,6 +368,7 @@ export function ChatPanel({
     e.preventDefault()
     const rawInput = input.trim()
     if (!rawInput || loading) return
+    trackEvent('tutor_message_sent')
 
     const userInput = formatInput(rawInput)
     setInput('')
