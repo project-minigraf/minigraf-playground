@@ -17,7 +17,12 @@ const VALID_EVENTS = new Set<EventName>([
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 export async function POST(req: Request) {
-  const body = await req.json() as { event: string; date: string }
+  let body: { event: string; date: string }
+  try {
+    body = await req.json()
+  } catch {
+    return new Response(null, { status: 400 })
+  }
   if (!VALID_EVENTS.has(body.event as EventName) || !DATE_RE.test(body.date)) {
     return new Response(null, { status: 400 })
   }
