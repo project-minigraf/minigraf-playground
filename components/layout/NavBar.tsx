@@ -1,5 +1,6 @@
 'use client'
-import { Settings } from 'lucide-react'
+import { Github, Settings } from 'lucide-react'
+import { trackEvent } from '@/lib/analytics'
 
 type Mode = 'sandbox' | 'lessons'
 
@@ -25,6 +26,16 @@ export function NavBar({ mode, onModeChange, onSettingsOpen }: NavBarProps) {
             </button>
           ))}
         </div>
+        <a
+          href="https://github.com/project-minigraf/minigraf"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => trackEvent('outbound_click_github')}
+          className="transition-colors text-gray-400 hover:text-white"
+          aria-label="GitHub repository"
+        >
+          <Github size={18} />
+        </a>
         <button onClick={onSettingsOpen} className="transition-colors text-gray-400 hover:text-white">
           <Settings size={18} />
         </button>
