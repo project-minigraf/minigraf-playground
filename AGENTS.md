@@ -6,7 +6,7 @@ This file tells AI coding agents everything they need to know to pick up an issu
 
 ## Project Overview
 
-Minigraf Playground is a browser-based interactive tutorial for [Minigraf](https://github.com/adityamukho/minigraf) — a tiny embedded graph database with Datalog querying and bi-temporal time travel. It runs Minigraf's WASM module in the browser, with an AI tutor powered by the user's own LLM API key (BYOK) or a Groq-based anonymous fallback.
+Minigraf Playground is a browser-based interactive tutorial for [Minigraf](https://github.com/project-minigraf/minigraf) — a tiny embedded graph database with Datalog querying and bi-temporal time travel. It runs Minigraf's WASM module in the browser, with an AI tutor powered by the user's own LLM API key (BYOK) or a Groq-based anonymous fallback.
 
 **Stack:** Next.js 15 (App Router), TypeScript, Tailwind CSS, Vercel AI SDK, CodeMirror 6, React Flow, IndexedDB (`idb`)
 
