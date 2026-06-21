@@ -19,6 +19,7 @@ import { useTutorial } from '@/hooks/useTutorial'
 import { buildNarratePayload, buildTutorContext } from '@/lib/tutor'
 import type { QueryResult, SessionPrefs } from '@/lib/types'
 import { decodeQuery } from '@/lib/share'
+import { trackEvent } from '@/lib/analytics'
 
 type Mode = 'sandbox' | 'lessons'
 type MobileTab = 'editor' | 'results' | 'chat'
@@ -53,6 +54,7 @@ export function AppShell() {
   const [isDesktop, setIsDesktop] = useState(true)
 
   const hashAppliedRef = useRef(false)
+  const lessonCompletedFiredRef = useRef<string | null>(null)
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth >= 768)
@@ -133,6 +135,8 @@ export function AppShell() {
   }, [tutorialManager, sessionPrefs])
 
   const handleActiveLessonChange = useCallback(async (id: string) => {
+    trackEvent('lesson_started')
+    lessonCompletedFiredRef.current = null
     tutorialManager.setActiveLessonId(id)
     setLessonStepGoal(null)
     setTutorPayload(null)
@@ -180,9 +184,23 @@ export function AppShell() {
     }
   }, [activeLessonId, lessonRunner.completedSteps]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (
+      mode === 'lessons' &&
+      activeLessonId &&
+      lessonRunner.totalSteps > 0 &&
+      lessonRunner.completedSteps.length === lessonRunner.totalSteps &&
+      lessonCompletedFiredRef.current !== activeLessonId
+    ) {
+      lessonCompletedFiredRef.current = activeLessonId
+      trackEvent('lesson_completed')
+    }
+  }, [mode, activeLessonId, lessonRunner.completedSteps.length, lessonRunner.totalSteps])
+
   const handleResult = useCallback(async (result: QueryResult, queryCode?: string) => {
     setQueryResult(result)
     setQueryError(null)
+    trackEvent('query_run')
     const nextQuery = queryCode ?? lastQuery
     if (queryCode) setLastQuery(queryCode)
 

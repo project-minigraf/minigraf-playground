@@ -64,3 +64,13 @@ export interface UseMinigrafReturn {
   error: string | null
   query: (datalog: string) => Promise<QueryResult>
 }
+
+export type EventName =
+  | 'lesson_started'
+  | 'lesson_completed'
+  | 'query_run'
+  | 'tutor_message_sent'
+  | 'outbound_click_github'
+  | 'outbound_click_crates'
+  | 'outbound_click_wiki'
+  | 'outbound_click_docs_rs'
