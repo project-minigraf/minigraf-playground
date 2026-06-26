@@ -57,13 +57,20 @@ A fact is a triple \`[entity attribute value]\` — optionally extended with val
 \`\`\`
 
 \`\`\`datalog
-;; Retract specific facts — history is preserved; original fact remains visible via time-travel queries
+;; Retract specific facts
 (retract [[:alice :friend :bob]])
 
 ;; Update pattern — retract old value, assert new
 (retract [[:alice :age 30]])
 (transact [[:alice :age 31]])
+
+;; Close an open-ended fact (e.g. employment ended) — retract and re-assert with valid-to
+(retract [[:alice :works-at :acme]])
+(transact {:valid-from "2022-03-01" :valid-to "2025-06-30"}
+          [[:alice :works-at :acme]])
 \`\`\`
+
+**Retraction semantics:** \`retract\` records a new logical fact with \`asserted = false\` — it is NOT a hard delete. The original assertion stays in the database and remains visible via \`:as-of N\` (before the retraction tx). Any query against the current state simply won't return retracted facts because the most recent record for that triple is an \`asserted = false\` marker.
 
 Valid-time values are ISO 8601 strings (\`"2024-01-15"\` or \`"2024-01-15T10:00:00Z"\`). Omitting \`:valid-to\` leaves the fact open-ended (valid forever).
 
@@ -93,9 +100,9 @@ Two time axes:
 Modifiers (all optional; compose freely):
 - \`:as-of N\` — snapshot at sequential tx count N
 - \`:as-of "2024-01-15T10:00:00Z"\` — snapshot at wall-clock time (UTC ISO 8601)
-- \`:valid-at "2023-06-01"\` — filter to facts valid at this date
-- \`:valid-at :any-valid-time\` — disable valid-time filter only; retracted facts are still hidden (to see pre-retraction state, use \`:as-of N\` before the retraction tx)
-- Default (no \`:valid-at\`): only currently valid facts returned
+- \`:valid-at "2023-06-01"\` — filter to facts where \`valid-from ≤ date < valid-to\` (left-closed, right-open)
+- \`:valid-at :any-valid-time\` — ignore valid-time ranges entirely; still only returns asserted facts (retracted facts remain hidden — use \`:as-of N\` before the retraction tx to see them)
+- Default (no \`:valid-at\`): facts where asserted = true AND valid-from ≤ now < valid-to. Open-ended facts (no valid-to) are included since their valid-to = forever.
 
 \`\`\`datalog
 (query [:find ?status :as-of 3 :where [:alice :role ?status]])
