@@ -8,7 +8,7 @@ import { splitForms } from '@/lib/minigraf-execution'
 import { TUTORIALS } from '@/lib/lessons'
 
 // Init WASM once for the whole suite
-const wasmPath = path.resolve('node_modules/@minigraf/browser/minigraf_bg.wasm')
+const wasmPath = path.resolve('node_modules/@minigraf/browser/minigraf_wasm_bg.wasm')
 initSync({ module: readFileSync(wasmPath) })
 
 // Helper: strip single-line Datalog comments (`;` to end of line)
