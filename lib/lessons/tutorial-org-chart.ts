@@ -383,7 +383,8 @@ All five non-CEO employees ultimately report to Alice.`,
 (rule [(reports-to ?emp ?mgr) [?emp :employee/manager ?mid] (reports-to ?mid ?mgr)])
 
 (query [:find ?name
-        :where (reports-to ?emp :alice)
+        :where [?alice :employee/title "CEO"]
+               (reports-to ?emp ?alice)
                [?emp :employee/name ?name]])`,
       expectedResult: {
         columns: ['?name'],
@@ -391,7 +392,7 @@ All five non-CEO employees ultimately report to Alice.`,
       },
       hints: [
         'Bob and Carol are direct reports to Alice (base case). Dave, Eve, and Frank report to Bob, who reports to Alice — the recursive case covers them.',
-        'The literal `:alice` in `(reports-to ?emp :alice)` binds the manager position, so only employees whose chain ends at Alice are returned.',
+        'Look up Alice by her title first (`[?alice :employee/title "CEO"]`), then pass `?alice` into `reports-to` to anchor the manager position.',
       ],
       successMessage: 'All five non-CEO employees returned — the recursive rule traverses the full hierarchy.',
     },
@@ -408,7 +409,8 @@ Dave, Eve, and Frank all report directly to Bob, so only the base case fires her
 (rule [(reports-to ?emp ?mgr) [?emp :employee/manager ?mid] (reports-to ?mid ?mgr)])
 
 (query [:find ?name
-        :where (reports-to ?emp :bob)
+        :where [?bob :employee/name "Bob"]
+               (reports-to ?emp ?bob)
                [?emp :employee/name ?name]])`,
       expectedResult: {
         columns: ['?name'],

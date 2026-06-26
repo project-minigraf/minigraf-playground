@@ -457,7 +457,8 @@ United → City (Leo), City → Rovers (Sofia): both hops appear in the result.`
 (rule [(transfer-chain ?a ?b) (transfer-link ?a ?mid) (transfer-chain ?mid ?b)])
 
 (query [:find ?name
-        :where (transfer-chain :united ?club)
+        :where [?united :club/name "FC United"]
+               (transfer-chain ?united ?club)
                [?club :club/name ?name]])`,
       expectedResult: {
         columns: ['?name'],

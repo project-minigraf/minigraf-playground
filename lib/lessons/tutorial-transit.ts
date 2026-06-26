@@ -439,7 +439,8 @@ Central Station and East Park are the hubs: Central connects to the Blue and Gre
 (rule [(reachable ?a ?b) (same-line ?a ?mid) (reachable ?mid ?b)])
 
 (query [:find ?name
-        :where (reachable :north ?station)
+        :where [?north :station/name "North Gate"]
+               (reachable ?north ?station)
                [?station :station/name ?name]])`,
       expectedResult: {
         columns: ['?name'],

@@ -38,8 +38,8 @@ export const lesson1: Lesson = {
     {
       id: 'l1-s3',
       instruction: `## Step 3: Query with a variable\n\nVariables start with \`?\`. Use one to find all of Alice's friends.`,
-      starterCode: `(transact [[:alice :friend :bob]
-           [:alice :friend :carol]
+      starterCode: `(transact [[:alice :friend :bob]])
+(transact [[:alice :friend :carol]
            [:bob :friend :dave]])
 
 (query [:find ?who
