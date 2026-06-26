@@ -94,7 +94,7 @@ Modifiers (all optional; compose freely):
 - \`:as-of N\` — snapshot at sequential tx count N
 - \`:as-of "2024-01-15T10:00:00Z"\` — snapshot at wall-clock time (UTC ISO 8601)
 - \`:valid-at "2023-06-01"\` — filter to facts valid at this date
-- \`:valid-at :any-valid-time\` — disable valid-time filter (see all versions)
+- \`:valid-at :any-valid-time\` — disable valid-time filter only; retracted facts are still hidden (to see pre-retraction state, use \`:as-of N\` before the retraction tx)
 - Default (no \`:valid-at\`): only currently valid facts returned
 
 \`\`\`datalog
@@ -108,6 +108,21 @@ Modifiers (all optional; compose freely):
         :as-of "2024-01-15T10:00:00Z"
         :valid-at "2023-06-01"
         :where [:alice :role ?status]])
+\`\`\`
+
+#### Pseudo-attributes (per-fact metadata)
+
+Use these in \`:where\` clauses to bind or filter on fact-level metadata. Require \`:valid-at :any-valid-time\` (otherwise only currently-valid facts are in scope).
+
+\`\`\`datalog
+[?e :db/tx-count ?tx]    ;; sequential tx counter when fact was written
+[?e :db/tx-id    ?ts]    ;; Unix ms timestamp of the transaction
+[?e :db/valid-from ?vf]  ;; fact's valid-from value
+[?e :db/valid-to   ?vt]  ;; fact's valid-to value
+
+;; Find current max tx_count (bookmark before retracting, then use :as-of N to time-travel back)
+(query [:find (max ?tx) :valid-at :any-valid-time
+        :where [?e ?a ?v] [?e :db/tx-count ?tx]])
 \`\`\`
 
 #### Per-query complexity limits
