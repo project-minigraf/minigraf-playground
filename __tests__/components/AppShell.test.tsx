@@ -70,7 +70,7 @@ jest.mock('@/components/chat/ChatPanel', () => ({
 jest.mock('@/lib/storage', () => ({
   getSessionPrefs: jest.fn().mockResolvedValue({
     provider: 'groq',
-    model: 'llama-3.3-70b-versatile',
+    model: 'qwen/qwen3.6-27b',
     mode: 'lessons',
     activeLessonId: 'lesson-1',
   }),

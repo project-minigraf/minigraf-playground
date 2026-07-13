@@ -38,7 +38,7 @@ describe('IndexedDB failure fallbacks', () => {
   })
 
   it('setSessionPrefs resolves without throwing when DB is unavailable', async () => {
-    await expect(setSessionPrefs({ provider: 'groq', model: 'llama-3.3-70b-versatile', mode: 'sandbox' })).resolves.toBeUndefined()
+    await expect(setSessionPrefs({ provider: 'groq', model: 'qwen/qwen3.6-27b', mode: 'sandbox' })).resolves.toBeUndefined()
   })
 
   it('setChatHistory resolves without throwing when DB is unavailable', async () => {

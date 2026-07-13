@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     userKey?: string  // Only accepted when provider === 'anthropic' (CORS prevents direct browser calls)
   }
 
-  const { messages, provider = 'groq', model = 'llama-3.3-70b-versatile', systemPrompt, test, userKey } = body
+  const { messages, provider = 'groq', model = 'qwen/qwen3.6-27b', systemPrompt, test, userKey } = body
 
   // userKey is only accepted for Anthropic — all other providers must call their APIs directly from the browser
   if (userKey && provider !== 'anthropic') {

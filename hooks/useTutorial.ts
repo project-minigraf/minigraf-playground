@@ -51,7 +51,7 @@ export function useTutorial(initialTutorialId: string | null) {
     const prefs = await getSessionPrefs()
     await setSessionPrefs({
       provider: prefs?.provider ?? 'groq',
-      model: prefs?.model ?? 'llama-3.3-70b-versatile',
+      model: prefs?.model ?? 'qwen/qwen3.6-27b',
       mode: 'lessons',
       ...(prefs?.activeLessonId ? { activeLessonId: prefs.activeLessonId } : {}),
       activeTutorialId: tutorialId,

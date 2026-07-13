@@ -126,7 +126,7 @@ export function AppShell() {
     setTutorPayload(null)
     const prefs: SessionPrefs = {
       provider: sessionPrefs?.provider ?? 'groq',
-      model: sessionPrefs?.model ?? 'llama-3.3-70b-versatile',
+      model: sessionPrefs?.model ?? 'qwen/qwen3.6-27b',
       mode: m,
       activeLessonId: tutorialManager.activeLessonId ?? undefined,
       activeTutorialId: tutorialManager.activeTutorial?.id ?? undefined,
@@ -343,7 +343,7 @@ export function AppShell() {
           <ChatPanel
             chatKey={mode === 'lessons' ? (activeLessonId ?? 'sandbox') : 'sandbox'}
             provider={sessionPrefs?.provider ?? 'groq'}
-            model={sessionPrefs?.model ?? 'llama-3.3-70b-versatile'}
+            model={sessionPrefs?.model ?? 'qwen/qwen3.6-27b'}
             systemPrompt={buildSystemPrompt({
               lessonStepGoal: lessonRunner.currentStep?.instruction ?? lessonStepGoal,
               progress: lessonRunner.completedSteps
