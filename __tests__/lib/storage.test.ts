@@ -34,3 +34,13 @@ describe('chat_history', () => {
     expect(await getChatHistory('sandbox')).toEqual([])
   })
 })
+describe('session_prefs', () => {
+  it('stores and retrieves prefs', async () => {
+    await setSessionPrefs({ provider: 'openai', model: 'gpt-4o', mode: 'sandbox' })
+    expect(await getSessionPrefs()).toEqual({ provider: 'openai', model: 'gpt-4o', mode: 'sandbox' })
+  })
+  it('migrates a retired Groq model to its replacement', async () => {
+    await setSessionPrefs({ provider: 'groq', model: 'llama-3.3-70b-versatile', mode: 'lessons' })
+    expect(await getSessionPrefs()).toEqual({ provider: 'groq', model: 'qwen/qwen3.6-27b', mode: 'lessons' })
+  })
+})

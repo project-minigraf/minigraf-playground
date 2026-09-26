@@ -33,10 +33,21 @@ export async function setGraphState(content: string): Promise<void> {
   await db.put('graph_state', content, 'current')
 }
 
+// Models the provider no longer serves, mapped to their replacement
+const RETIRED_MODELS: Record<string, string> = {
+  'llama-3.3-70b-versatile': 'qwen/qwen3.6-27b',
+}
+
 export async function getSessionPrefs(): Promise<SessionPrefs | null> {
   const db = await safeGetDB()
   if (!db) return null
-  return (await db.get('session_prefs', 'prefs')) ?? null
+  const prefs: SessionPrefs | undefined = await db.get('session_prefs', 'prefs')
+  if (!prefs) return null
+  const replacement = RETIRED_MODELS[prefs.model]
+  if (!replacement) return prefs
+  const migrated = { ...prefs, model: replacement }
+  await db.put('session_prefs', migrated, 'prefs')
+  return migrated
 }
 export async function setSessionPrefs(prefs: SessionPrefs): Promise<void> {
   const db = await safeGetDB()

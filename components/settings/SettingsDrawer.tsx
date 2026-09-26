@@ -16,7 +16,7 @@ const MODELS: Record<Provider, string[]> = {
   gemini: ['gemini-2.5-flash', 'gemini-2.5-pro'],
   openai: ['gpt-4.1-nano', 'gpt-4.1-mini', 'gpt-4.1'],
   xai: ['grok-3-mini', 'grok-3'],
-  groq: ['qwen/qwen3.6-27b', 'llama-3.3-70b-versatile'],
+  groq: ['qwen/qwen3.6-27b'],
 }
 
 interface SettingsDrawerProps {
