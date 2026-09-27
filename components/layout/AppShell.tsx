@@ -325,6 +325,11 @@ export function AppShell() {
               onChange={setEditorValue}
               onResult={handleResult}
               onError={handleError}
+              visualizerTitle={
+                mode === 'lessons' && tutorialManager.activeTutorial
+                  ? `Playground: ${tutorialManager.activeTutorial.title}`
+                  : 'Playground sandbox'
+              }
             />
           </div>
           {/* Results — hidden on mobile editor tab; full height on mobile results tab */}

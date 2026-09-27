@@ -21,6 +21,12 @@ with the AI tutor available as you explore.
 Each tutorial has an AI tutor (powered by your own API key or a free Groq fallback)
 that can answer questions and explain your results.
 
+**Visualize ↗** next to Share opens the facts in your editor in the
+[Minigraf time travel visualizer](https://project-minigraf.github.io/minigraf-visualizer/).
+It replays your `transact`, `retract` and `rule` forms and shows how the graph changes
+over transaction time and valid time. The Sports League tutorial is a good one to try.
+The code travels in the link's `#` part, so it is not sent to any server.
+
 ## Privacy
 
 Your API key never leaves your browser. All graph state and conversation history

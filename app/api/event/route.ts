@@ -12,6 +12,7 @@ const VALID_EVENTS = new Set<EventName>([
   'outbound_click_crates',
   'outbound_click_wiki',
   'outbound_click_docs_rs',
+  'outbound_click_visualizer',
 ])
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
