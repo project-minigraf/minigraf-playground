@@ -7,6 +7,8 @@ import { datalogLanguage } from './datalog-lang'
 import { useMinigraf } from '@/hooks/useMinigraf'
 import type { QueryResult } from '@/lib/types'
 import { encodeQuery } from '@/lib/share'
+import { visualizerUrl } from '@/lib/visualizer'
+import { trackEvent } from '@/lib/analytics'
 
 // CodeMirror state machinery for error line highlighting
 const addErrorLine = StateEffect.define<number>()   // 1-based line number
@@ -32,9 +34,11 @@ interface QueryEditorProps {
   onChange: (value: string) => void
   onResult: (result: QueryResult, queryCode?: string) => void
   onError: (error: string, queryCode?: string) => void
+  /** Title shown in the time travel visualizer when the user opens the code there. */
+  visualizerTitle?: string
 }
 
-export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorProps) {
+export function QueryEditor({ value, onChange, onResult, onError, visualizerTitle = 'Minigraf Playground' }: QueryEditorProps) {
   const { status, error: wasmError, query } = useMinigraf('sandbox')
   const [queryError, setQueryError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -89,6 +93,8 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
   }, [value])
 
   const displayError = queryError || wasmError
+  // The visualizer replays the transact/retract/rule forms and shows their history.
+  const visualizeHref = visualizerUrl(value, visualizerTitle)
 
   const isReady = status === 'ready'
   const statusText = status === 'loading' ? 'Loading...' : status === 'ready' ? 'Ready' : status === 'error' ? 'Error' : ''
@@ -123,6 +129,18 @@ export function QueryEditor({ value, onChange, onResult, onError }: QueryEditorP
           {statusText}
         </span>
         <div className="flex items-center gap-2">
+          {visualizeHref && (
+            <a
+              href={visualizeHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent('outbound_click_visualizer')}
+              title="See how these facts change over transaction time and valid time"
+              className="px-2 py-1 text-xs text-gray-400 hover:text-white border border-gray-700 rounded-md transition-colors"
+            >
+              Visualize ↗
+            </a>
+          )}
           <button
             onClick={share}
             className="px-2 py-1 text-xs text-gray-400 hover:text-white border border-gray-700 rounded-md transition-colors"

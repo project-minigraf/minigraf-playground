@@ -74,3 +74,4 @@ export type EventName =
   | 'outbound_click_crates'
   | 'outbound_click_wiki'
   | 'outbound_click_docs_rs'
+  | 'outbound_click_visualizer'

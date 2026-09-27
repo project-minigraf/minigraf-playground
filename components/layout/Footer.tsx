@@ -6,6 +6,7 @@ const OUTBOUND_LINKS: { label: string; href: string; event: EventName }[] = [
   { label: 'GitHub', href: 'https://github.com/project-minigraf/minigraf', event: 'outbound_click_github' },
   { label: 'Wiki', href: 'https://github.com/project-minigraf/minigraf/wiki', event: 'outbound_click_wiki' },
   { label: 'docs.rs', href: 'https://docs.rs/minigraf', event: 'outbound_click_docs_rs' },
+  { label: 'Time travel visualizer', href: 'https://project-minigraf.github.io/minigraf-visualizer/', event: 'outbound_click_visualizer' },
 ]
 
 export function Footer() {
