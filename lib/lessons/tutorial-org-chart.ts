@@ -106,7 +106,7 @@ const SETUP_L2 = `; Departments
 ; but was only recorded in a later transaction (retract + two bounded asserts below)
 (retract [[:eve :employee/salary 85000]])
 
-(transact {:valid-to "2025-03-31"}
+(transact {:valid-from "2023-03-01" :valid-to "2025-04-01"}
   [[:eve :employee/salary 85000]])
 
 (transact {:valid-from "2025-04-01"}

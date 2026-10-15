@@ -8,8 +8,8 @@ export const lesson1: Lesson = {
     {
       id: 'l1-s1',
       instruction: `## Step 1: Assert some facts\n\nMinigraf stores facts as triples: \`[entity attribute value]\`.\n\nRun this transaction to add a few friendship edges to the graph.`,
-      starterCode: `(transact [[:alice :friend :bob]
-           [:alice :friend :carol]
+      starterCode: `(transact [[:alice :friend :bob]])
+(transact [[:alice :friend :carol]
            [:bob :friend :dave]])`,
       expectedResult: { columns: [], rows: [] },
       hints: [
@@ -21,8 +21,8 @@ export const lesson1: Lesson = {
     {
       id: 'l1-s2',
       instruction: `## Step 2: Query a specific fact\n\nNow look up Alice's friendship edge and restrict the result to Bob.`,
-      starterCode: `(transact [[:alice :friend :bob]
-           [:alice :friend :carol]
+      starterCode: `(transact [[:alice :friend :bob]])
+(transact [[:alice :friend :carol]
            [:bob :friend :dave]])
 
 (query [:find ?friend
