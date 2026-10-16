@@ -18,4 +18,8 @@ describe('buildSystemPrompt', () => {
     const p = buildSystemPrompt({ lessonStepGoal: null, progress: [] })
     expect(p).toContain('```datalog')
   })
+  it('says per-fact pseudo-attributes without :any-valid-time are an error', () => {
+    const p = buildSystemPrompt({ lessonStepGoal: null, progress: [] })
+    expect(p).toContain('INT-026')
+  })
 })

@@ -436,3 +436,60 @@ describe('transit tutorial', () => {
     })
   })
 })
+
+describe('lesson starter code', () => {
+  const steps = TUTORIALS.flatMap((t) =>
+    t.lessons.flatMap((l) => l.steps.map((s) => ({ id: `${t.id}/${s.id}`, code: s.starterCode }))),
+  )
+
+  /** The top-level `(transact ...)` forms of `code`. */
+  function transacts(code: string): string[] {
+    const out: string[] = []
+    let depth = 0
+    let start = -1
+    for (let i = 0; i < code.length; i++) {
+      if (code[i] === '(') {
+        if (depth === 0) start = i
+        depth++
+      } else if (code[i] === ')') {
+        depth--
+        if (depth === 0 && start !== -1) {
+          const form = code.slice(start, i + 1)
+          if (form.startsWith('(transact')) out.push(form)
+          start = -1
+        }
+      }
+    }
+    return out
+  }
+
+  it('never writes two values of one entity and attribute in one transact', () => {
+    // Minigraf v2.x reads them back as one value (known issue #371).
+    const offenders: string[] = []
+    for (const { id, code } of steps) {
+      for (const form of transacts(code)) {
+        const seen = new Set<string>()
+        for (const m of form.matchAll(/\[(:[\w-]+)\s+(:[\w/-]+)\s/g)) {
+          const key = `${m[1]} ${m[2]}`
+          if (seen.has(key)) offenders.push(`${id}: ${key}`)
+          seen.add(key)
+        }
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
+  it('gives every :valid-to a :valid-from in the same map', () => {
+    // Without one the window starts at the transaction time: empty on v2.x,
+    // rejected with API-019 from v3.0.0.
+    const offenders: string[] = []
+    for (const { id, code } of steps) {
+      for (const m of code.matchAll(/\{[^}]*\}/g)) {
+        if (m[0].includes(':valid-to') && !m[0].includes(':valid-from')) {
+          offenders.push(`${id}: ${m[0]}`)
+        }
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+})

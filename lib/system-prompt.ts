@@ -119,7 +119,7 @@ Modifiers (all optional; compose freely):
 
 #### Pseudo-attributes (per-fact metadata)
 
-Use these in \`:where\` clauses to bind or filter on fact-level metadata. Require \`:valid-at :any-valid-time\` (otherwise only currently-valid facts are in scope).
+Use these in \`:where\` clauses to bind or filter on fact-level metadata. Require \`:valid-at :any-valid-time\` (or the shorthand \`:any-valid-time\`); without it the query fails with INT-026.
 
 \`\`\`datalog
 [?e :db/tx-count ?tx]    ;; sequential tx counter when fact was written
