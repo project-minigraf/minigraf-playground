@@ -486,11 +486,10 @@ This step is open-ended — the tutor will give feedback.`,
 
 ; Which clubs feed into Rovers via the transfer chain?
 (query [:find ?name
-        :where (transfer-chain ?club ?dest)
-               [(= ?dest :rovers)]
+        :where (transfer-chain ?club :rovers)
                [?club :club/name ?name]])`,
       hints: [
-        'Leave both arguments free — `(transfer-chain ?club ?dest)` — and keep the chains that end at Rovers with `[(= ?dest :rovers)]`.',
+        'Reversing the arguments — `(transfer-chain ?club :rovers)` — finds all source clubs whose transfer chain reaches Rovers.',
         'To extend the network, add a new player with `[:new-player :player/club :athletic] [:new-player :player/prev-club :rovers]` before the rules and re-run the query.',
       ],
       successMessage: 'You explored the transfer network in reverse and experimented with extending the chain.',
